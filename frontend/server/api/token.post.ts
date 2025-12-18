@@ -1,4 +1,4 @@
-import { AccessToken, RoomServiceClient } from 'livekit-server-sdk'
+import { AccessToken } from 'livekit-server-sdk'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
@@ -6,7 +6,6 @@ export default defineEventHandler(async (event) => {
 
   const apiKey = config.livekitApiKey
   const apiSecret = config.livekitApiSecret
-  const livekitUrl = config.public.livekitUrl
 
   if (!apiKey || !apiSecret) {
     throw createError({
@@ -15,13 +14,13 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Get resume and job from request body
-  const { resume, job } = body
+  // Get resume and job IDs from request body
+  const { resumeId, jobId } = body
 
-  if (!resume || !job) {
+  if (!resumeId || !jobId) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Resume and job description are required'
+      statusMessage: 'Resume ID and job ID are required'
     })
   }
 
@@ -29,31 +28,11 @@ export default defineEventHandler(async (event) => {
   const roomName = `interview-${Date.now()}`
   const participantIdentity = `user-${Math.random().toString(36).substring(7)}`
 
-  // Create room with metadata containing resume and job
-  const roomMetadata = JSON.stringify({ resume, job })
-
-  // Create room service client to create room with metadata
-  const wsUrl = livekitUrl as string
-  const httpUrl = wsUrl.replace('wss://', 'https://').replace('ws://', 'http://')
-
-  const roomService = new RoomServiceClient(httpUrl, apiKey, apiSecret)
-
-  try {
-    await roomService.createRoom({
-      name: roomName,
-      metadata: roomMetadata,
-      emptyTimeout: 300, // 5 minutes
-      maxParticipants: 2
-    })
-  } catch (error: any) {
-    console.error('Failed to create room:', error)
-    // Room might already exist, continue anyway
-  }
-
-  // Create access token
+  // Create access token with metadata containing just the IDs
   const token = new AccessToken(apiKey, apiSecret, {
     identity: participantIdentity,
-    ttl: '1h'
+    ttl: '1h',
+    metadata: JSON.stringify({ resumeId, jobId })
   })
 
   token.addGrant({

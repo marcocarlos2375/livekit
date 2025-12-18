@@ -504,12 +504,12 @@ const startInterview = async () => {
   interviewState.value = 'initializing'
 
   try {
-    // Get token from API with resume and job data
+    // Get token from API with resume and job IDs
     const { token } = await $fetch<{ token: string }>('/api/token', {
       method: 'POST',
       body: {
-        resume: selectedResume.value,
-        job: selectedJob.value
+        resumeId: selectedResume.value.id,
+        jobId: selectedJob.value.id
       }
     })
 
