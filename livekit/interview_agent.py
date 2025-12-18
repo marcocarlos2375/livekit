@@ -462,11 +462,14 @@ async def entrypoint(ctx: agents.JobContext):
     job = get_job_by_id(job_id)
     logger.info(f"Using resume: {resume.get('name')} for job: {job.get('title')} at {job.get('company')}")
 
+    # Use prewarmed VAD if available, otherwise load fresh
+    vad = ctx.proc.userdata.get("vad") or silero.VAD.load()
+
     session = AgentSession(
         stt=deepgram.STT(model="nova-2"),
         llm=openai.LLM(model=os.getenv("LLM_CHOICE", "gpt-4.1-mini")),
         tts=openai.TTS(voice="shimmer"),
-        vad=silero.VAD.load(),
+        vad=vad,
     )
 
     # Track and publish agent state changes to the room
@@ -491,5 +494,17 @@ async def entrypoint(ctx: agents.JobContext):
     )
 
 
+def prewarm(proc: agents.JobProcess):
+    """Prewarm function to load models before job starts."""
+    # Pre-load the VAD model so it's ready when a job starts
+    proc.userdata["vad"] = silero.VAD.load()
+
+
 if __name__ == "__main__":
-    agents.cli.run_app(agents.WorkerOptions(entrypoint_fnc=entrypoint))
+    agents.cli.run_app(
+        agents.WorkerOptions(
+            entrypoint_fnc=entrypoint,
+            prewarm_fnc=prewarm,  # Prewarm function to load models
+            num_idle_processes=1,  # Keep 1 warm process ready
+        )
+    )
