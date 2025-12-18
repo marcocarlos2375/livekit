@@ -3,8 +3,8 @@
     <!-- Header -->
     <header class="border-b border-slate-700 bg-slate-900/50 backdrop-blur">
       <div class="max-w-4xl mx-auto px-4 py-4">
-        <h1 class="text-2xl font-bold text-white">Interview Simulator</h1>
-        <p class="text-slate-400 text-sm">Practice with AI interviewer Sarah Mitchell</p>
+        <h1 class="text-2xl font-bold text-white">{{ selectedLanguage === 'fr' ? 'Simulateur d\'Entretien' : 'Interview Simulator' }}</h1>
+        <p class="text-slate-400 text-sm">{{ selectedLanguage === 'fr' ? 'Entraînez-vous avec Marie Dubois, recruteuse IA' : 'Practice with AI interviewer Sarah Mitchell' }}</p>
       </div>
     </header>
 
@@ -12,6 +12,34 @@
 
       <!-- Setup Phase: Select Resume and Job -->
       <div v-if="interviewState === 'setup'" class="space-y-6">
+
+        <!-- Language Tabs -->
+        <div class="flex justify-center gap-2">
+          <button
+            @click="selectedLanguage = 'en'"
+            :class="[
+              'px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2',
+              selectedLanguage === 'en'
+                ? 'bg-white text-slate-900'
+                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+            ]"
+          >
+            <span class="text-lg">🇬🇧</span>
+            English
+          </button>
+          <button
+            @click="selectedLanguage = 'fr'"
+            :class="[
+              'px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2',
+              selectedLanguage === 'fr'
+                ? 'bg-white text-slate-900'
+                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+            ]"
+          >
+            <span class="text-lg">🇫🇷</span>
+            Français
+          </button>
+        </div>
 
         <!-- Resume Selection -->
         <div class="bg-slate-800/50 rounded-2xl border border-slate-700 p-6">
@@ -25,7 +53,7 @@
           <!-- Resume Options -->
           <div class="grid gap-3 mb-4">
             <button
-              v-for="resume in sampleResumes"
+              v-for="resume in filteredResumes"
               :key="resume.id"
               @click="selectedResume = resume"
               :class="[
@@ -97,7 +125,7 @@
           <!-- Job Options -->
           <div class="grid gap-3 mb-4">
             <button
-              v-for="job in sampleJobs"
+              v-for="job in filteredJobs"
               :key="job.id"
               @click="selectedJob = job"
               :class="[
@@ -168,7 +196,7 @@
 
           <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
             <button
-              v-for="voice in availableVoices"
+              v-for="voice in filteredVoices"
               :key="voice.id"
               @click="selectedVoice = voice"
               :class="[
@@ -245,11 +273,11 @@
             <div class="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping"></div>
             <div class="absolute inset-2 bg-emerald-500/30 rounded-full animate-pulse"></div>
             <div class="relative w-full h-full bg-emerald-600 rounded-full flex items-center justify-center">
-              <span class="text-white text-3xl font-bold">SM</span>
+              <span class="text-white text-3xl font-bold">{{ interviewerInitials }}</span>
             </div>
           </div>
-          <h2 class="text-2xl font-bold text-white mb-2">Sarah is Speaking</h2>
-          <p class="text-emerald-400">Listen to the question...</p>
+          <h2 class="text-2xl font-bold text-white mb-2">{{ selectedLanguage === 'fr' ? `${interviewerName} parle` : `${interviewerName} is Speaking` }}</h2>
+          <p class="text-emerald-400">{{ selectedLanguage === 'fr' ? 'Écoutez la question...' : 'Listen to the question...' }}</p>
           <div class="mt-6 flex justify-center items-end gap-1 h-12">
             <span v-for="i in 7" :key="i"
               class="w-2 bg-emerald-500 rounded-full animate-pulse"
@@ -266,7 +294,7 @@
           <div class="w-32 h-32 mx-auto mb-6 relative">
             <div class="absolute inset-0 bg-purple-500/20 rounded-full animate-pulse"></div>
             <div class="relative w-full h-full bg-purple-600 rounded-full flex items-center justify-center">
-              <span class="text-white text-3xl font-bold">SM</span>
+              <span class="text-white text-3xl font-bold">{{ interviewerInitials }}</span>
             </div>
             <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
               <div class="flex gap-0.5">
@@ -276,8 +304,8 @@
               </div>
             </div>
           </div>
-          <h2 class="text-2xl font-bold text-white mb-2">Sarah is Thinking</h2>
-          <p class="text-purple-400">Processing your response...</p>
+          <h2 class="text-2xl font-bold text-white mb-2">{{ selectedLanguage === 'fr' ? `${interviewerName} réfléchit` : `${interviewerName} is Thinking` }}</h2>
+          <p class="text-purple-400">{{ selectedLanguage === 'fr' ? 'Traitement de votre réponse...' : 'Processing your response...' }}</p>
           <div class="mt-6 flex justify-center gap-2">
             <span class="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style="animation-delay: 0s"></span>
             <span class="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style="animation-delay: 0.15s"></span>
@@ -289,7 +317,7 @@
         <div v-else-if="interviewState === 'listening'" class="text-center">
           <div class="w-32 h-32 mx-auto mb-6 relative">
             <div class="relative w-full h-full bg-slate-700 rounded-full flex items-center justify-center border-4 border-blue-500">
-              <span class="text-white text-3xl font-bold">SM</span>
+              <span class="text-white text-3xl font-bold">{{ interviewerInitials }}</span>
             </div>
             <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
               <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -297,8 +325,8 @@
               </svg>
             </div>
           </div>
-          <h2 class="text-2xl font-bold text-white mb-2">Your Turn</h2>
-          <p class="text-blue-400">Sarah is listening to you...</p>
+          <h2 class="text-2xl font-bold text-white mb-2">{{ selectedLanguage === 'fr' ? 'À votre tour' : 'Your Turn' }}</h2>
+          <p class="text-blue-400">{{ selectedLanguage === 'fr' ? `${interviewerName} vous écoute...` : `${interviewerName} is listening to you...` }}</p>
           <div class="mt-6 max-w-xs mx-auto">
             <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
               <div
@@ -306,7 +334,7 @@
                 :style="{ width: `${audioLevel}%` }"
               ></div>
             </div>
-            <p class="text-slate-500 text-sm mt-2">Microphone level</p>
+            <p class="text-slate-500 text-sm mt-2">{{ selectedLanguage === 'fr' ? 'Niveau du microphone' : 'Microphone level' }}</p>
           </div>
         </div>
 
@@ -320,8 +348,8 @@
               </svg>
             </div>
           </div>
-          <h2 class="text-2xl font-bold text-white mb-2">You're Speaking</h2>
-          <p class="text-blue-400">Keep going, Sarah is listening...</p>
+          <h2 class="text-2xl font-bold text-white mb-2">{{ selectedLanguage === 'fr' ? 'Vous parlez' : 'You\'re Speaking' }}</h2>
+          <p class="text-blue-400">{{ selectedLanguage === 'fr' ? `Continuez, ${interviewerName} vous écoute...` : `Keep going, ${interviewerName} is listening...` }}</p>
           <div class="mt-6 flex justify-center items-end gap-1 h-12">
             <span v-for="i in 7" :key="i"
               class="w-2 bg-blue-500 rounded-full"
@@ -349,13 +377,13 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
             </svg>
-            {{ isMuted ? 'Unmute' : 'Mute' }}
+            {{ selectedLanguage === 'fr' ? (isMuted ? 'Réactiver' : 'Couper') : (isMuted ? 'Unmute' : 'Mute') }}
           </button>
           <button
             @click="endInterview"
             class="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-medium rounded-lg transition-colors"
           >
-            End Interview
+            {{ selectedLanguage === 'fr' ? 'Terminer l\'entretien' : 'End Interview' }}
           </button>
         </div>
       </div>
@@ -389,7 +417,7 @@
           <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
           </svg>
-          Conversation
+          {{ selectedLanguage === 'fr' ? 'Conversation' : 'Conversation' }}
         </h2>
         <div class="space-y-4 max-h-80 overflow-y-auto" ref="transcriptContainer">
           <div
@@ -407,9 +435,9 @@
                 'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold',
                 message.speaker === 'agent' ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'
               ]">
-                {{ message.speaker === 'agent' ? 'SM' : 'U' }}
+                {{ message.speaker === 'agent' ? interviewerInitials : (selectedLanguage === 'fr' ? 'V' : 'U') }}
               </span>
-              {{ message.speaker === 'agent' ? 'Sarah Mitchell' : 'You' }}
+              {{ message.speaker === 'agent' ? interviewerName : (selectedLanguage === 'fr' ? 'Vous' : 'You') }}
             </p>
             <p class="text-white">{{ message.text }}</p>
           </div>
@@ -417,7 +445,7 @@
             <svg class="w-12 h-12 mx-auto mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            Waiting for the conversation to begin...
+            {{ selectedLanguage === 'fr' ? 'En attente du début de la conversation...' : 'Waiting for the conversation to begin...' }}
           </div>
         </div>
       </div>
@@ -427,7 +455,7 @@
 
 <script setup lang="ts">
 import { Room, RoomEvent, Track, ConnectionState, RemoteTrack, RemoteParticipant, Participant } from 'livekit-client'
-import { sampleResumes, sampleJobs, availableVoices, type Resume, type JobDescription, type Voice } from '~/data/samples'
+import { sampleResumes, sampleJobs, availableVoices, type Resume, type JobDescription, type Voice, type Language } from '~/data/samples'
 
 const config = useRuntimeConfig()
 
@@ -444,9 +472,10 @@ const agentState = ref<string>('listening')
 const agentHasSpoken = ref(false)
 
 // Selection state
+const selectedLanguage = ref<Language>('en')
 const selectedResume = ref<Resume | null>(null)
 const selectedJob = ref<JobDescription | null>(null)
-const selectedVoice = ref<Voice | null>(availableVoices[0]) // Default to shimmer
+const selectedVoice = ref<Voice | null>(availableVoices[0]) // Default to first voice
 const showCustomResume = ref(false)
 const showCustomJob = ref(false)
 const customResumeJson = ref('')
@@ -454,16 +483,43 @@ const customJobJson = ref('')
 const customResumeError = ref('')
 const customJobError = ref('')
 
+// Computed filtered lists by language
+const filteredResumes = computed(() => sampleResumes.filter(r => r.language === selectedLanguage.value))
+const filteredJobs = computed(() => sampleJobs.filter(j => j.language === selectedLanguage.value))
+const filteredVoices = computed(() => availableVoices.filter(v => v.language === selectedLanguage.value))
+
+// Reset selections when language changes
+watch(selectedLanguage, () => {
+  selectedResume.value = null
+  selectedJob.value = null
+  selectedVoice.value = filteredVoices.value[0] || null
+})
+
 let room: Room | null = null
 let audioContext: AudioContext | null = null
 let analyser: AnalyserNode | null = null
 let durationInterval: NodeJS.Timeout | null = null
 
+// Interviewer info based on language
+const interviewerName = computed(() => selectedLanguage.value === 'fr' ? 'Marie Dubois' : 'Sarah Mitchell')
+const interviewerInitials = computed(() => selectedLanguage.value === 'fr' ? 'MD' : 'SM')
+
 const statusText = computed(() => {
+  const name = interviewerName.value
+  if (selectedLanguage.value === 'fr') {
+    switch (interviewState.value) {
+      case 'initializing': return 'Connexion à la salle d\'entretien...'
+      case 'thinking': return `${name} réfléchit...`
+      case 'speaking': return `${name} parle`
+      case 'listening': return 'En attente de votre réponse'
+      case 'userSpeaking': return 'Vous parlez'
+      default: return ''
+    }
+  }
   switch (interviewState.value) {
     case 'initializing': return 'Connecting to interview room...'
-    case 'thinking': return 'Sarah is thinking...'
-    case 'speaking': return 'Sarah is speaking'
+    case 'thinking': return `${name} is thinking...`
+    case 'speaking': return `${name} is speaking`
     case 'listening': return 'Waiting for your response'
     case 'userSpeaking': return 'You are speaking'
     default: return ''
@@ -542,13 +598,14 @@ const startInterview = async () => {
   interviewState.value = 'initializing'
 
   try {
-    // Get token from API with resume, job, and voice IDs
+    // Get token from API with resume, job, voice IDs, and language
     const { token } = await $fetch<{ token: string }>('/api/token', {
       method: 'POST',
       body: {
         resumeId: selectedResume.value.id,
         jobId: selectedJob.value.id,
-        voiceId: selectedVoice.value?.id || 'shimmer'
+        voiceId: selectedVoice.value?.id || 'aura-2-thalia-en',
+        language: selectedLanguage.value
       }
     })
 

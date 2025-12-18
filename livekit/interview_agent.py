@@ -3,6 +3,7 @@ Job Interview Simulator
 =======================
 A voice-based AI interviewer that conducts personalized interviews
 based on the candidate's resume and the target job description.
+Supports English and French languages.
 """
 
 from dotenv import load_dotenv
@@ -15,7 +16,7 @@ import json
 
 load_dotenv(".env")
 
-# Sample resumes data
+# Sample resumes data (English)
 SAMPLE_RESUMES = {
     "alex-chen": {
         "id": "alex-chen",
@@ -121,11 +122,118 @@ SAMPLE_RESUMES = {
             "tools": ["Kubernetes", "Terraform", "AWS", "GCP", "Prometheus"]
         },
         "certifications": ["AWS DevOps Professional", "CKA (Kubernetes)"]
+    },
+    # French resumes
+    "marie-dupont": {
+        "id": "marie-dupont",
+        "name": "Marie Dupont",
+        "summary": "Développeuse full-stack avec 5 ans d'expérience dans la création d'applications web performantes. Passionnée par le code propre et l'expérience utilisateur.",
+        "experience": [
+            {
+                "title": "Ingénieure Logiciel Senior",
+                "company": "TechFrance",
+                "duration": "2021 - Présent",
+                "responsibilities": [
+                    "Direction du développement d'une architecture microservices pour 500K+ utilisateurs",
+                    "Mentorat des développeurs juniors et revues de code",
+                    "Mise en place de pipelines CI/CD réduisant le temps de déploiement de 50%"
+                ]
+            },
+            {
+                "title": "Développeuse Logiciel",
+                "company": "StartupParis",
+                "duration": "2019 - 2021",
+                "responsibilities": [
+                    "Développement d'un tableau de bord React pour l'analyse en temps réel",
+                    "Création d'APIs RESTful avec Node.js et PostgreSQL",
+                    "Collaboration avec l'équipe design pour l'amélioration UX"
+                ]
+            }
+        ],
+        "education": [{"degree": "Master Informatique", "school": "École Polytechnique", "year": "2019"}],
+        "skills": {
+            "languages": ["TypeScript", "Python", "Java", "SQL"],
+            "frontend": ["React", "Vue.js", "Next.js", "Tailwind CSS"],
+            "backend": ["Node.js", "Django", "PostgreSQL", "Redis"],
+            "tools": ["Docker", "Kubernetes", "AWS", "GitLab CI"]
+        },
+        "certifications": ["AWS Solutions Architect", "Scrum Master"]
+    },
+    "thomas-martin": {
+        "id": "thomas-martin",
+        "name": "Thomas Martin",
+        "summary": "Ingénieur backend avec 6 ans d'expérience en systèmes distribués et infrastructure cloud. Expert en services haute disponibilité.",
+        "experience": [
+            {
+                "title": "Lead Technique",
+                "company": "CloudEurope",
+                "duration": "2020 - Présent",
+                "responsibilities": [
+                    "Architecture d'un système événementiel traitant 5M événements/jour",
+                    "Réduction des coûts infrastructure de 35% par optimisation",
+                    "Migration d'un monolithe vers une architecture microservices"
+                ]
+            },
+            {
+                "title": "Développeur Backend",
+                "company": "DataTech",
+                "duration": "2018 - 2020",
+                "responsibilities": [
+                    "Construction de pipelines de données pour l'entraînement ML",
+                    "Implémentation de streaming temps réel avec Kafka",
+                    "Conception et maintenance de bases PostgreSQL"
+                ]
+            }
+        ],
+        "education": [{"degree": "Diplôme d'Ingénieur", "school": "INSA Lyon", "year": "2018"}],
+        "skills": {
+            "languages": ["Go", "Python", "Java", "SQL"],
+            "frontend": ["React"],
+            "backend": ["gRPC", "Kafka", "PostgreSQL", "MongoDB", "Redis"],
+            "tools": ["Kubernetes", "Terraform", "GCP", "Prometheus"]
+        },
+        "certifications": ["GCP Professional Cloud Architect", "CKA (Kubernetes)"]
+    },
+    "sophie-bernard": {
+        "id": "sophie-bernard",
+        "name": "Sophie Bernard",
+        "summary": "Spécialiste frontend avec 4 ans d'expérience dans la création d'applications web accessibles et performantes. Focus sur l'UX et le design system.",
+        "experience": [
+            {
+                "title": "Développeuse Frontend Senior",
+                "company": "DesignLab Paris",
+                "duration": "2022 - Présent",
+                "responsibilities": [
+                    "Création d'une bibliothèque de composants utilisée sur 8 produits",
+                    "Amélioration des scores Lighthouse de 60 à 95+",
+                    "Implémentation des standards d'accessibilité RGAA"
+                ]
+            },
+            {
+                "title": "Développeuse Frontend",
+                "company": "AgenceWeb",
+                "duration": "2020 - 2022",
+                "responsibilities": [
+                    "Développement de sites responsive pour 30+ clients",
+                    "Création d'animations et expériences interactives",
+                    "Optimisation des performances et du temps de chargement"
+                ]
+            }
+        ],
+        "education": [{"degree": "Master Design Numérique", "school": "Gobelins", "year": "2020"}],
+        "skills": {
+            "languages": ["JavaScript", "TypeScript", "HTML", "CSS"],
+            "frontend": ["React", "Vue.js", "Nuxt", "SCSS", "Framer Motion"],
+            "backend": ["Node.js", "Express"],
+            "tools": ["Figma", "Storybook", "Jest", "Cypress"]
+        },
+        "certifications": ["Google UX Design", "Opquast"]
     }
 }
 
 # Sample jobs data
 SAMPLE_JOBS = {
+    # English jobs
     "senior-fullstack": {
         "id": "senior-fullstack",
         "title": "Senior Full-Stack Engineer",
@@ -215,6 +323,97 @@ SAMPLE_JOBS = {
             ]
         },
         "benefits": ["Competitive pay", "Remote friendly", "401k matching", "Conference budget"]
+    },
+    # French jobs
+    "ingenieur-fullstack-senior": {
+        "id": "ingenieur-fullstack-senior",
+        "title": "Ingénieur Full-Stack Senior",
+        "company": "TechInnov",
+        "about_company": "TechInnov est une entreprise SaaS en forte croissance qui développe des outils de productivité nouvelle génération. Nous servons plus de 30 000 entreprises en Europe.",
+        "about_role": "Nous recherchons un Ingénieur Full-Stack Senior pour rejoindre notre équipe produit. Vous travaillerez sur notre application web principale utilisée par des milliers d'utilisateurs quotidiennement.",
+        "responsibilities": [
+            "Concevoir et implémenter des fonctionnalités de bout en bout",
+            "Collaborer avec les équipes produit et design",
+            "Encadrer les développeurs juniors",
+            "Participer aux décisions d'architecture",
+            "Écrire du code propre, testé et documenté"
+        ],
+        "requirements": {
+            "must_have": [
+                "5+ ans d'expérience en développement logiciel",
+                "Maîtrise de TypeScript et React",
+                "Expérience avec Node.js ou Python backend",
+                "Expérience en conception de bases de données (SQL et NoSQL)",
+                "Excellentes compétences en communication"
+            ],
+            "nice_to_have": [
+                "Expérience avec AWS ou GCP",
+                "Connaissance des pratiques CI/CD",
+                "Expérience avec les microservices",
+                "Contributions open source"
+            ]
+        },
+        "benefits": ["Salaire compétitif", "Télétravail flexible", "Mutuelle", "BSPCE"]
+    },
+    "lead-frontend": {
+        "id": "lead-frontend",
+        "title": "Lead Technique Frontend",
+        "company": "DesignApps",
+        "about_company": "DesignApps crée des outils de design et collaboration pour les équipes créatives. Nos produits sont utilisés par les designers des plus grandes entreprises françaises.",
+        "about_role": "Dirigez notre équipe frontend dans la création d'applications performantes et élégantes. Vous définirez la direction technique et encadrerez une équipe de 5 ingénieurs.",
+        "responsibilities": [
+            "Diriger les décisions d'architecture frontend",
+            "Encadrer et faire progresser les membres de l'équipe",
+            "Piloter les initiatives de performance et d'accessibilité",
+            "Collaborer avec les équipes backend et design",
+            "Livrer des fonctionnalités de haute qualité dans les délais"
+        ],
+        "requirements": {
+            "must_have": [
+                "6+ ans d'expérience en développement frontend",
+                "Expertise de l'écosystème React",
+                "Expérience en management d'équipes techniques",
+                "Solide compréhension des performances web",
+                "Passion pour l'expérience utilisateur"
+            ],
+            "nice_to_have": [
+                "Expérience avec canvas/WebGL",
+                "Connaissance des design systems",
+                "Expérience avec la collaboration temps réel",
+                "Background en design"
+            ]
+        },
+        "benefits": ["Salaire attractif", "RTT illimités", "Budget formation", "BSPCE"]
+    },
+    "ingenieur-backend": {
+        "id": "ingenieur-backend",
+        "title": "Ingénieur Backend",
+        "company": "DataFlow",
+        "about_company": "DataFlow fournit une infrastructure de données temps réel pour les applications modernes. Notre plateforme traite des milliards d'événements par jour.",
+        "about_role": "Rejoignez notre équipe infrastructure pour construire et faire évoluer notre pipeline de données. Vous travaillerez sur des problématiques complexes de systèmes distribués.",
+        "responsibilities": [
+            "Construire et maintenir les pipelines de traitement de données",
+            "Optimiser les performances et la fiabilité du système",
+            "Concevoir des APIs pour usage interne et externe",
+            "Participer aux astreintes",
+            "Rédiger la documentation technique"
+        ],
+        "requirements": {
+            "must_have": [
+                "4+ ans d'expérience en développement backend",
+                "Maîtrise de Go ou Python",
+                "Expérience avec les systèmes distribués",
+                "Connaissance des files de messages (Kafka, RabbitMQ)",
+                "Compétences en SQL et optimisation de bases de données"
+            ],
+            "nice_to_have": [
+                "Expérience avec Kubernetes",
+                "Connaissance du stream processing",
+                "Familiarité avec les outils d'observabilité",
+                "Expérience avec les systèmes à haut débit"
+            ]
+        },
+        "benefits": ["Rémunération compétitive", "Télétravail", "PEE avec abondement", "Budget conférences"]
     }
 }
 
@@ -232,21 +431,34 @@ def get_job_by_id(job_id: str) -> dict:
 class JobInterviewer(Agent):
     """AI Interviewer that asks questions based on resume and job description."""
 
-    def __init__(self, resume: dict, job: dict):
+    def __init__(self, resume: dict, job: dict, language: str = "en"):
         self.resume = resume
         self.job = job
+        self.language = language
 
         # Build context for the interviewer
         resume_summary = self._format_resume()
         job_summary = self._format_job()
 
-        # Interviewer identity
-        self.interviewer_name = "Sarah Mitchell"
-        self.interviewer_title = "Engineering Hiring Manager"
-        self.interviewer_years = 8
+        # Interviewer identity based on language
+        if language == "fr":
+            self.interviewer_name = "Marie Dubois"
+            self.interviewer_title = "Responsable Recrutement Tech"
+            self.interviewer_years = 8
+            instructions = self._get_french_instructions(resume_summary, job_summary)
+        else:
+            self.interviewer_name = "Sarah Mitchell"
+            self.interviewer_title = "Engineering Hiring Manager"
+            self.interviewer_years = 8
+            instructions = self._get_english_instructions(resume_summary, job_summary)
 
-        super().__init__(
-            instructions=f"""You are {self.interviewer_name}, {self.interviewer_title} at {self.job.get('company', 'the company')}.
+        super().__init__(instructions=instructions)
+
+        self.questions_asked = 0
+        self.max_questions = 7
+
+    def _get_english_instructions(self, resume_summary: str, job_summary: str) -> str:
+        return f"""You are {self.interviewer_name}, {self.interviewer_title} at {self.job.get('company', 'the company')}.
 
 YOUR BACKGROUND:
 - Name: {self.interviewer_name}
@@ -287,10 +499,53 @@ QUESTION TYPES TO INCLUDE:
 3. Behavioral: "Tell me about a time when..." (related to job requirements)
 4. Situational: "How would you handle..." (based on job responsibilities)
 5. Motivation: Why they want this role, what interests them about the company"""
-        )
 
-        self.questions_asked = 0
-        self.max_questions = 7
+    def _get_french_instructions(self, resume_summary: str, job_summary: str) -> str:
+        company = self.job.get("company", "entreprise")
+        title = self.job.get("title", "le poste")
+        return f"""Vous êtes {self.interviewer_name}, {self.interviewer_title} chez {company}.
+
+VOTRE PROFIL :
+- Nom : {self.interviewer_name}
+- Rôle : {self.interviewer_title} chez {company}
+- Expérience : {self.interviewer_years} ans dans la tech, 3 ans chez {company}
+- Personnalité : Chaleureuse, accessible, mais rigoureuse. Vous souhaitez sincèrement que les candidats réussissent.
+- Style : Vous préférez les conversations naturelles plutôt que les sessions Q&R rigides.
+
+Lorsque vous vous présentez, mentionnez votre nom, votre rôle et brièvement depuis combien de temps vous êtes dans cette entreprise. Mettez le candidat à l'aise.
+
+Vous menez un entretien d'embauche pour le poste de {title}.
+
+Vos objectifs :
+1. Évaluer si le candidat correspond au poste
+2. Poser des questions qui relient son expérience passée aux exigences du poste
+3. Évaluer à la fois les compétences techniques et les soft skills
+4. Être professionnelle mais amicale et conversationnelle
+5. Mettre le candidat à l'aise tout en étant rigoureuse
+
+CV DU CANDIDAT :
+{resume_summary}
+
+DESCRIPTION DU POSTE :
+{job_summary}
+
+DIRECTIVES POUR L'ENTRETIEN :
+- Commencez par vous présenter chaleureusement (nom, rôle, ancienneté) et présenter le poste
+- Posez une question à la fois et écoutez attentivement la réponse
+- Faites référence à des éléments spécifiques du CV lors des questions de suivi
+- Alternez questions comportementales (expérience passée) et situationnelles (hypothétiques)
+- Montrez un intérêt sincère pour les réponses avec de brefs commentaires
+- Restez concise - c'est une conversation vocale
+- Après 5-7 questions, concluez l'entretien professionnellement
+
+TYPES DE QUESTIONS À INCLURE :
+1. Basées sur l'expérience : "Je vois que vous avez travaillé sur X chez Y. Pouvez-vous m'en dire plus..."
+2. Techniques : Questions sur les compétences listées pertinentes pour le poste
+3. Comportementales : "Parlez-moi d'une situation où..." (liée aux exigences du poste)
+4. Situationnelles : "Comment géreriez-vous..." (basé sur les responsabilités du poste)
+5. Motivation : Pourquoi ce poste, ce qui les intéresse dans cette entreprise
+
+IMPORTANT : Vous devez parler UNIQUEMENT en français pendant tout l'entretien."""
 
     def _format_resume(self) -> str:
         """Format resume data into readable text."""
@@ -413,17 +668,34 @@ Tools: {', '.join(skills.get('tools', []))}"""
         self.questions_asked += 1
         remaining = self.max_questions - self.questions_asked
 
-        if remaining <= 0:
-            return "INTERVIEW_COMPLETE: You've asked enough questions. Please wrap up the interview by thanking the candidate, asking if they have questions, and explaining next steps."
-        elif remaining <= 2:
-            return f"You've asked {self.questions_asked} questions. Start wrapping up soon - {remaining} questions remaining."
+        if self.language == "fr":
+            if remaining <= 0:
+                return "ENTRETIEN_TERMINÉ : Vous avez posé suffisamment de questions. Veuillez conclure l'entretien en remerciant le candidat, en lui demandant s'il a des questions, et en expliquant les prochaines étapes."
+            elif remaining <= 2:
+                return f"Vous avez posé {self.questions_asked} questions. Commencez à conclure bientôt - {remaining} questions restantes."
+            else:
+                return f"Question {self.questions_asked} sur {self.max_questions} posée. Continuez l'entretien."
         else:
-            return f"Question {self.questions_asked} of {self.max_questions} asked. Continue with the interview."
+            if remaining <= 0:
+                return "INTERVIEW_COMPLETE: You've asked enough questions. Please wrap up the interview by thanking the candidate, asking if they have questions, and explaining next steps."
+            elif remaining <= 2:
+                return f"You've asked {self.questions_asked} questions. Start wrapping up soon - {remaining} questions remaining."
+            else:
+                return f"Question {self.questions_asked} of {self.max_questions} asked. Continue with the interview."
 
     @function_tool
     async def end_interview(self, context: RunContext) -> str:
         """End the interview and provide a summary."""
-        return f"""Interview complete!
+        if self.language == "fr":
+            return f"""Entretien terminé !
+
+Candidat : {self.resume.get('name', 'Candidat')}
+Poste : {self.job.get('title', 'Poste')} chez {self.job.get('company', 'Entreprise')}
+Questions posées : {self.questions_asked}
+
+Remerciez le candidat pour son temps, demandez s'il a des questions sur le poste ou l'entreprise, et expliquez que l'équipe le recontactera pour les prochaines étapes."""
+        else:
+            return f"""Interview complete!
 
 Candidate: {self.resume.get('name', 'Candidate')}
 Position: {self.job.get('title', 'Position')} at {self.job.get('company', 'Company')}
@@ -450,6 +722,7 @@ async def entrypoint(ctx: agents.JobContext):
     resume_id = "alex-chen"
     job_id = "senior-fullstack"
     voice_id = "aura-2-thalia-en"
+    language = "en"
 
     # Connect to the room first
     logger.info("Connecting to room...")
@@ -470,7 +743,8 @@ async def entrypoint(ctx: agents.JobContext):
                 resume_id = data.get('resumeId', resume_id)
                 job_id = data.get('jobId', job_id)
                 voice_id = data.get('voiceId', voice_id)
-                logger.info(f"Found participant metadata: resume={resume_id}, job={job_id}, voice={voice_id}")
+                language = data.get('language', language)
+                logger.info(f"Found participant metadata: resume={resume_id}, job={job_id}, voice={voice_id}, language={language}")
                 break
             except json.JSONDecodeError:
                 pass
@@ -480,7 +754,7 @@ async def entrypoint(ctx: agents.JobContext):
     # Get resume and job data
     resume = get_resume_by_id(resume_id)
     job = get_job_by_id(job_id)
-    logger.info(f"Using resume: {resume.get('name')} for job: {job.get('title')} at {job.get('company')}")
+    logger.info(f"Using resume: {resume.get('name')} for job: {job.get('title')} at {job.get('company')} (language: {language})")
 
     log_timing("Resume/job loaded")
 
@@ -489,9 +763,10 @@ async def entrypoint(ctx: agents.JobContext):
     vad = silero.VAD.load()
     log_timing("VAD loaded")
 
-    # Create STT
+    # Create STT with language support
     logger.info("Creating STT...")
-    stt = deepgram.STT(model="nova-2")
+    stt_language = "fr" if language == "fr" else "en"
+    stt = deepgram.STT(model="nova-2", language=stt_language)
     log_timing("STT created")
 
     # Create LLM
@@ -530,15 +805,20 @@ async def entrypoint(ctx: agents.JobContext):
     logger.info("Starting session...")
     await session.start(
         room=ctx.room,
-        agent=JobInterviewer(resume=resume, job=job)
+        agent=JobInterviewer(resume=resume, job=job, language=language)
     )
     log_timing("Session started")
 
-    # Generate initial reply
+    # Generate initial reply based on language
     logger.info("Generating initial reply...")
-    await session.generate_reply(
-        instructions="Introduce yourself warmly as Sarah Mitchell. Mention your role as Engineering Hiring Manager, that you've been with the company for 3 years, and thank the candidate for taking the time to interview. Then briefly describe the role and start with your first question, referencing something from their resume."
-    )
+    if language == "fr":
+        await session.generate_reply(
+            instructions="Présentez-vous chaleureusement en tant que Marie Dubois. Mentionnez votre rôle de Responsable Recrutement Tech, que vous êtes dans l'entreprise depuis 3 ans, et remerciez le candidat d'avoir pris le temps de passer cet entretien. Ensuite, décrivez brièvement le poste et commencez avec votre première question, en faisant référence à quelque chose de son CV."
+        )
+    else:
+        await session.generate_reply(
+            instructions="Introduce yourself warmly as Sarah Mitchell. Mention your role as Engineering Hiring Manager, that you've been with the company for 3 years, and thank the candidate for taking the time to interview. Then briefly describe the role and start with your first question, referencing something from their resume."
+        )
     log_timing("Initial reply generated")
 
 

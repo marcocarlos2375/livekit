@@ -14,8 +14,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Get resume, job, and voice IDs from request body
-  const { resumeId, jobId, voiceId } = body
+  // Get resume, job, voice IDs, and language from request body
+  const { resumeId, jobId, voiceId, language } = body
 
   if (!resumeId || !jobId) {
     throw createError({
@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
   const token = new AccessToken(apiKey, apiSecret, {
     identity: participantIdentity,
     ttl: '1h',
-    metadata: JSON.stringify({ resumeId, jobId, voiceId: voiceId || 'aura-2-thalia-en' })
+    metadata: JSON.stringify({ resumeId, jobId, voiceId: voiceId || 'aura-2-thalia-en', language: language || 'en' })
   })
 
   token.addGrant({
