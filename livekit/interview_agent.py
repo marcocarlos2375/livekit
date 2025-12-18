@@ -201,6 +201,9 @@ Thank the candidate for their time, ask if they have any questions about the rol
 
 async def entrypoint(ctx: agents.JobContext):
     """Entry point for the interview agent."""
+    import asyncio
+    import logging
+    logger = logging.getLogger("interview-agent")
 
     session = AgentSession(
         stt=deepgram.STT(model="nova-2"),
@@ -208,6 +211,20 @@ async def entrypoint(ctx: agents.JobContext):
         tts=openai.TTS(voice="shimmer"),  # Female voice for Sarah
         vad=silero.VAD.load(),
     )
+
+    # Track and publish agent state changes to the room
+    @session.on("agent_state_changed")
+    def on_agent_state_changed(ev):
+        """Publish agent state to room so frontend can display it."""
+        state_name = str(ev.new_state).lower()
+        # Extract just the state name (e.g., "AgentState.SPEAKING" -> "speaking")
+        if "." in state_name:
+            state_name = state_name.split(".")[-1]
+        logger.info(f"Agent state changed: {state_name}")
+        # Run async set_attributes in the event loop
+        asyncio.create_task(
+            ctx.room.local_participant.set_attributes({"agent_state": state_name})
+        )
 
     await session.start(
         room=ctx.room,
