@@ -157,24 +157,61 @@
           </div>
         </div>
 
+        <!-- Voice Selection -->
+        <div class="bg-slate-800/50 rounded-2xl border border-slate-700 p-6">
+          <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+            Select Interviewer Voice
+          </h2>
+
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <button
+              v-for="voice in availableVoices"
+              :key="voice.id"
+              @click="selectedVoice = voice"
+              :class="[
+                'p-3 rounded-xl border text-left transition-all',
+                selectedVoice?.id === voice.id
+                  ? 'border-purple-500 bg-purple-500/10'
+                  : 'border-slate-600 hover:border-slate-500 bg-slate-700/30'
+              ]"
+            >
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-medium text-white">{{ voice.name }}</h3>
+                  <p class="text-xs text-slate-400 mt-1">{{ voice.description }}</p>
+                </div>
+                <div v-if="selectedVoice?.id === voice.id" class="text-purple-500">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                  </svg>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
         <!-- Start Button -->
         <div class="text-center pt-4">
           <button
             @click="startInterview"
-            :disabled="!selectedResume || !selectedJob"
+            :disabled="!selectedResume || !selectedJob || !selectedVoice"
             :class="[
               'px-8 py-4 text-lg font-medium rounded-xl transition-all transform',
-              selectedResume && selectedJob
+              selectedResume && selectedJob && selectedVoice
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white hover:scale-105'
                 : 'bg-slate-700 text-slate-500 cursor-not-allowed'
             ]"
           >
-            <span v-if="selectedResume && selectedJob">Start Interview</span>
-            <span v-else>Select Resume and Job to Continue</span>
+            <span v-if="selectedResume && selectedJob && selectedVoice">Start Interview</span>
+            <span v-else>Select Resume, Job, and Voice to Continue</span>
           </button>
-          <p v-if="selectedResume && selectedJob" class="mt-3 text-slate-400 text-sm">
+          <p v-if="selectedResume && selectedJob && selectedVoice" class="mt-3 text-slate-400 text-sm">
             Interviewing <span class="text-emerald-400">{{ selectedResume.name }}</span>
             for <span class="text-blue-400">{{ selectedJob.title }}</span> at {{ selectedJob.company }}
+            <span class="text-purple-400">({{ selectedVoice.name }} voice)</span>
           </p>
         </div>
       </div>
@@ -390,7 +427,7 @@
 
 <script setup lang="ts">
 import { Room, RoomEvent, Track, ConnectionState, RemoteTrack, RemoteParticipant, Participant } from 'livekit-client'
-import { sampleResumes, sampleJobs, type Resume, type JobDescription } from '~/data/samples'
+import { sampleResumes, sampleJobs, availableVoices, type Resume, type JobDescription, type Voice } from '~/data/samples'
 
 const config = useRuntimeConfig()
 
@@ -409,6 +446,7 @@ const agentHasSpoken = ref(false)
 // Selection state
 const selectedResume = ref<Resume | null>(null)
 const selectedJob = ref<JobDescription | null>(null)
+const selectedVoice = ref<Voice | null>(availableVoices[0]) // Default to shimmer
 const showCustomResume = ref(false)
 const showCustomJob = ref(false)
 const customResumeJson = ref('')
@@ -504,12 +542,13 @@ const startInterview = async () => {
   interviewState.value = 'initializing'
 
   try {
-    // Get token from API with resume and job IDs
+    // Get token from API with resume, job, and voice IDs
     const { token } = await $fetch<{ token: string }>('/api/token', {
       method: 'POST',
       body: {
         resumeId: selectedResume.value.id,
-        jobId: selectedJob.value.id
+        jobId: selectedJob.value.id,
+        voiceId: selectedVoice.value?.id || 'shimmer'
       }
     })
 

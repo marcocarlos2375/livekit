@@ -436,41 +436,83 @@ async def entrypoint(ctx: agents.JobContext):
     """Entry point for the interview agent."""
     import asyncio
     import logging
+    import time
     logger = logging.getLogger("interview-agent")
 
-    # Wait for a participant to connect to get their metadata
-    logger.info("Waiting for participant to connect...")
+    start_time = time.time()
+    def log_timing(step: str):
+        elapsed = time.time() - start_time
+        logger.info(f"[TIMING] {step}: {elapsed:.2f}s")
+
+    log_timing("Entrypoint started")
 
     # Default IDs
     resume_id = "alex-chen"
     job_id = "senior-fullstack"
+    voice_id = "aura-2-thalia-en"
 
-    # Check for existing participants first
+    # Connect to the room first
+    logger.info("Connecting to room...")
+    await ctx.connect()
+    log_timing("Room connected")
+
+    # Wait for participant to connect if not already connected
+    if not ctx.room.remote_participants:
+        logger.info("Waiting for participant to connect...")
+        await ctx.wait_for_participant()
+        log_timing("Participant connected")
+
+    # Read metadata from participant
     for participant in ctx.room.remote_participants.values():
         if participant.metadata:
             try:
                 data = json.loads(participant.metadata)
                 resume_id = data.get('resumeId', resume_id)
                 job_id = data.get('jobId', job_id)
-                logger.info(f"Found participant metadata: resume={resume_id}, job={job_id}")
+                voice_id = data.get('voiceId', voice_id)
+                logger.info(f"Found participant metadata: resume={resume_id}, job={job_id}, voice={voice_id}")
                 break
             except json.JSONDecodeError:
                 pass
+
+    log_timing("Metadata parsed")
 
     # Get resume and job data
     resume = get_resume_by_id(resume_id)
     job = get_job_by_id(job_id)
     logger.info(f"Using resume: {resume.get('name')} for job: {job.get('title')} at {job.get('company')}")
 
-    # Use prewarmed VAD if available, otherwise load fresh
-    vad = ctx.proc.userdata.get("vad") or silero.VAD.load()
+    log_timing("Resume/job loaded")
 
+    # Load VAD
+    logger.info("Loading VAD model...")
+    vad = silero.VAD.load()
+    log_timing("VAD loaded")
+
+    # Create STT
+    logger.info("Creating STT...")
+    stt = deepgram.STT(model="nova-2")
+    log_timing("STT created")
+
+    # Create LLM
+    logger.info("Creating LLM...")
+    llm = openai.LLM(model=os.getenv("LLM_CHOICE", "gpt-4.1-mini"))
+    log_timing("LLM created")
+
+    # Create TTS with selected voice (Deepgram Aura-2)
+    logger.info(f"Creating TTS with voice: {voice_id}...")
+    tts = deepgram.TTS(model=voice_id)
+    log_timing(f"TTS created with voice: {voice_id}")
+
+    # Create session
+    logger.info("Creating AgentSession...")
     session = AgentSession(
-        stt=deepgram.STT(model="nova-2"),
-        llm=openai.LLM(model=os.getenv("LLM_CHOICE", "gpt-4.1-mini")),
-        tts=openai.TTS(voice="shimmer"),
+        stt=stt,
+        llm=llm,
+        tts=tts,
         vad=vad,
     )
+    log_timing("AgentSession created")
 
     # Track and publish agent state changes to the room
     @session.on("agent_state_changed")
@@ -484,27 +526,21 @@ async def entrypoint(ctx: agents.JobContext):
             ctx.room.local_participant.set_attributes({"agent_state": state_name})
         )
 
+    # Start session
+    logger.info("Starting session...")
     await session.start(
         room=ctx.room,
         agent=JobInterviewer(resume=resume, job=job)
     )
+    log_timing("Session started")
 
+    # Generate initial reply
+    logger.info("Generating initial reply...")
     await session.generate_reply(
         instructions="Introduce yourself warmly as Sarah Mitchell. Mention your role as Engineering Hiring Manager, that you've been with the company for 3 years, and thank the candidate for taking the time to interview. Then briefly describe the role and start with your first question, referencing something from their resume."
     )
-
-
-def prewarm(proc: agents.JobProcess):
-    """Prewarm function to load models before job starts."""
-    # Pre-load the VAD model so it's ready when a job starts
-    proc.userdata["vad"] = silero.VAD.load()
+    log_timing("Initial reply generated")
 
 
 if __name__ == "__main__":
-    agents.cli.run_app(
-        agents.WorkerOptions(
-            entrypoint_fnc=entrypoint,
-            prewarm_fnc=prewarm,  # Prewarm function to load models
-            num_idle_processes=1,  # Keep 1 warm process ready
-        )
-    )
+    agents.cli.run_app(agents.WorkerOptions(entrypoint_fnc=entrypoint))

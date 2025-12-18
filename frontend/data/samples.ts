@@ -1,4 +1,29 @@
-// Sample resumes and job descriptions for interview simulation
+// Sample resumes, job descriptions, and voices for interview simulation
+
+export interface Voice {
+  id: string
+  name: string
+  description: string
+}
+
+export const availableVoices: Voice[] = [
+  // English voices
+  { id: 'aura-2-thalia-en', name: 'Thalia', description: 'Female, clear & confident' },
+  { id: 'aura-2-andromeda-en', name: 'Andromeda', description: 'Female, casual & expressive' },
+  { id: 'aura-2-apollo-en', name: 'Apollo', description: 'Male, confident & comfortable' },
+  { id: 'aura-2-athena-en', name: 'Athena', description: 'Female, wise & professional' },
+  { id: 'aura-2-orion-en', name: 'Orion', description: 'Male, strong & authoritative' },
+  { id: 'aura-2-luna-en', name: 'Luna', description: 'Female, soft & calming' },
+  { id: 'aura-2-zeus-en', name: 'Zeus', description: 'Male, deep & powerful' },
+  { id: 'aura-2-aurora-en', name: 'Aurora', description: 'Female, warm & friendly' },
+  { id: 'aura-2-hermes-en', name: 'Hermes', description: 'Male, quick & energetic' },
+  { id: 'aura-2-helena-en', name: 'Helena', description: 'Female, elegant & refined' },
+  { id: 'aura-2-orpheus-en', name: 'Orpheus', description: 'Male, melodic & expressive' },
+  { id: 'aura-2-iris-en', name: 'Iris', description: 'Female, bright & cheerful' },
+  // French voices
+  { id: 'aura-2-agathe-fr', name: 'Agathe (FR)', description: 'Female, cheerful & friendly' },
+  { id: 'aura-2-hector-fr', name: 'Hector (FR)', description: 'Male, confident & expressive' },
+]
 
 export interface Resume {
   id: string

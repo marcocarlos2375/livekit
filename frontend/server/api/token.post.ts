@@ -14,8 +14,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Get resume and job IDs from request body
-  const { resumeId, jobId } = body
+  // Get resume, job, and voice IDs from request body
+  const { resumeId, jobId, voiceId } = body
 
   if (!resumeId || !jobId) {
     throw createError({
@@ -28,11 +28,11 @@ export default defineEventHandler(async (event) => {
   const roomName = `interview-${Date.now()}`
   const participantIdentity = `user-${Math.random().toString(36).substring(7)}`
 
-  // Create access token with metadata containing just the IDs
+  // Create access token with metadata containing the IDs
   const token = new AccessToken(apiKey, apiSecret, {
     identity: participantIdentity,
     ttl: '1h',
-    metadata: JSON.stringify({ resumeId, jobId })
+    metadata: JSON.stringify({ resumeId, jobId, voiceId: voiceId || 'aura-2-thalia-en' })
   })
 
   token.addGrant({
