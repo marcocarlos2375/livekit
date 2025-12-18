@@ -280,6 +280,7 @@ const transcript = ref<Array<{ speaker: 'agent' | 'user', text: string }>>([])
 const transcriptContainer = ref<HTMLElement | null>(null)
 const interviewDuration = ref(0)
 const agentState = ref<string>('listening') // State from backend
+const agentHasSpoken = ref(false) // Track if agent has spoken at least once
 
 let room: Room | null = null
 let audioContext: AudioContext | null = null
@@ -305,23 +306,36 @@ const formatDuration = (seconds: number) => {
 
 // Update interview state based on agent state from backend
 const updateInterviewState = () => {
-  if (interviewState.value === 'idle' || interviewState.value === 'initializing') return
+  if (interviewState.value === 'idle') return
 
   switch (agentState.value) {
     case 'speaking':
+      // Agent is speaking - mark that agent has spoken and update state
+      agentHasSpoken.value = true
       interviewState.value = 'speaking'
       break
     case 'thinking':
-      interviewState.value = 'thinking'
+      // Only show thinking if agent has spoken at least once
+      if (agentHasSpoken.value) {
+        interviewState.value = 'thinking'
+      }
       break
     case 'listening':
-      // Only set to listening if user is not currently speaking
-      if (interviewState.value !== 'userSpeaking') {
-        interviewState.value = 'listening'
+      // Only show listening/userSpeaking states after agent has spoken once
+      if (agentHasSpoken.value) {
+        if (interviewState.value !== 'userSpeaking') {
+          interviewState.value = 'listening'
+        }
+      } else {
+        // Agent hasn't spoken yet, stay in initializing
+        interviewState.value = 'initializing'
       }
       break
     default:
-      interviewState.value = 'listening'
+      // Default: stay in initializing until agent speaks
+      if (!agentHasSpoken.value) {
+        interviewState.value = 'initializing'
+      }
   }
 }
 
@@ -401,8 +415,8 @@ const startInterview = async () => {
     room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
       const userIsSpeaking = speakers.some(s => !s.identity.startsWith('agent'))
 
-      // Only update to userSpeaking if agent is in listening state
-      if (userIsSpeaking && agentState.value === 'listening') {
+      // Only update to userSpeaking if agent is in listening state AND has spoken at least once
+      if (userIsSpeaking && agentState.value === 'listening' && agentHasSpoken.value) {
         interviewState.value = 'userSpeaking'
       } else {
         updateInterviewState()
@@ -455,6 +469,7 @@ const endInterview = async () => {
   transcript.value = []
   audioLevel.value = 0
   interviewDuration.value = 0
+  agentHasSpoken.value = false
 }
 
 const toggleMute = async () => {
@@ -486,8 +501,8 @@ const setupAudioMonitoring = () => {
     const average = dataArray.reduce((a, b) => a + b) / dataArray.length
     audioLevel.value = Math.min(100, average * 1.5)
 
-    // Only handle user speaking detection when agent is listening
-    if (agentState.value === 'listening') {
+    // Only handle user speaking detection when agent is listening AND has spoken at least once
+    if (agentState.value === 'listening' && agentHasSpoken.value) {
       if (audioLevel.value > 15) {
         // User is speaking
         interviewState.value = 'userSpeaking'
