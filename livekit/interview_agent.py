@@ -16,21 +16,12 @@ import json
 load_dotenv(".env")
 
 
-def load_json_file(filename: str) -> dict:
-    """Load a JSON file from the same directory."""
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    filepath = os.path.join(script_dir, filename)
-    with open(filepath, 'r') as f:
-        return json.load(f)
-
-
 class JobInterviewer(Agent):
     """AI Interviewer that asks questions based on resume and job description."""
 
-    def __init__(self):
-        # Load resume and job description
-        self.resume = load_json_file("resume.json")
-        self.job = load_json_file("job_description.json")
+    def __init__(self, resume: dict, job: dict):
+        self.resume = resume
+        self.job = job
 
         # Build context for the interviewer
         resume_summary = self._format_resume()
@@ -42,18 +33,18 @@ class JobInterviewer(Agent):
         self.interviewer_years = 8
 
         super().__init__(
-            instructions=f"""You are {self.interviewer_name}, {self.interviewer_title} at {self.job['company']}.
+            instructions=f"""You are {self.interviewer_name}, {self.interviewer_title} at {self.job.get('company', 'the company')}.
 
 YOUR BACKGROUND:
 - Name: {self.interviewer_name}
-- Role: {self.interviewer_title} at {self.job['company']}
-- Experience: {self.interviewer_years} years in tech, 3 years at {self.job['company']}
+- Role: {self.interviewer_title} at {self.job.get('company', 'the company')}
+- Experience: {self.interviewer_years} years in tech, 3 years at {self.job.get('company', 'the company')}
 - Personality: Warm, approachable, but thorough. You genuinely want candidates to succeed.
 - Style: You like to have natural conversations rather than rigid Q&A sessions.
 
 When introducing yourself, mention your name, role, and briefly how long you've been with the company. Make the candidate feel comfortable.
 
-You are conducting a job interview for the position of {self.job['title']}.
+You are conducting a job interview for the position of {self.job.get('title', 'the role')}.
 
 Your goals:
 1. Assess if the candidate is a good fit for the role
@@ -95,34 +86,55 @@ QUESTION TYPES TO INCLUDE:
         # Format experience
         exp_text = ""
         for exp in r.get('experience', []):
-            exp_text += f"\n- {exp['title']} at {exp['company']} ({exp['duration']})"
+            exp_text += f"\n- {exp.get('title', 'Role')} at {exp.get('company', 'Company')} ({exp.get('duration', 'N/A')})"
             for resp in exp.get('responsibilities', [])[:2]:
                 exp_text += f"\n  * {resp}"
 
         # Format skills
         skills = r.get('skills', {})
-        skills_text = ", ".join(skills.get('languages', []) + skills.get('frontend', [])[:2] + skills.get('backend', [])[:2])
+        if isinstance(skills, dict):
+            skills_text = ", ".join(
+                skills.get('languages', []) +
+                skills.get('frontend', [])[:2] +
+                skills.get('backend', [])[:2]
+            )
+        else:
+            skills_text = str(skills)
 
-        return f"""Name: {r.get('name')}
-Summary: {r.get('summary')}
-Experience:{exp_text}
-Education: {r.get('education', [{}])[0].get('degree', 'N/A')} from {r.get('education', [{}])[0].get('school', 'N/A')}
-Key Skills: {skills_text}
-Certifications: {', '.join(r.get('certifications', []))}"""
+        # Format education
+        education = r.get('education', [{}])
+        if isinstance(education, list) and len(education) > 0:
+            edu = education[0]
+            edu_text = f"{edu.get('degree', 'N/A')} from {edu.get('school', 'N/A')}"
+        else:
+            edu_text = "N/A"
+
+        return f"""Name: {r.get('name', 'Candidate')}
+Summary: {r.get('summary', 'No summary provided')}
+Experience:{exp_text if exp_text else ' No experience listed'}
+Education: {edu_text}
+Key Skills: {skills_text if skills_text else 'Not specified'}
+Certifications: {', '.join(r.get('certifications', [])) if r.get('certifications') else 'None listed'}"""
 
     def _format_job(self) -> str:
         """Format job description into readable text."""
         j = self.job
 
         reqs = j.get('requirements', {})
-        must_have = ", ".join(reqs.get('must_have', [])[:5])
+        if isinstance(reqs, dict):
+            must_have = ", ".join(reqs.get('must_have', [])[:5])
+        else:
+            must_have = str(reqs)
 
-        return f"""Position: {j.get('title')}
-Company: {j.get('company')}
-About: {j.get('about_company')}
-Role: {j.get('about_role')}
-Key Requirements: {must_have}
-Responsibilities: {', '.join(j.get('responsibilities', [])[:3])}"""
+        responsibilities = j.get('responsibilities', [])
+        resp_text = ', '.join(responsibilities[:3]) if responsibilities else 'Not specified'
+
+        return f"""Position: {j.get('title', 'Position')}
+Company: {j.get('company', 'Company')}
+About: {j.get('about_company', 'No company description')}
+Role: {j.get('about_role', 'No role description')}
+Key Requirements: {must_have if must_have else 'Not specified'}
+Responsibilities: {resp_text}"""
 
     @function_tool
     async def get_resume_detail(self, context: RunContext, section: str) -> str:
@@ -136,25 +148,31 @@ Responsibilities: {', '.join(j.get('responsibilities', [])[:3])}"""
         if section == "experience":
             result = "Candidate's work experience:\n"
             for exp in self.resume.get('experience', []):
-                result += f"\n{exp['title']} at {exp['company']} ({exp['duration']}):\n"
+                result += f"\n{exp.get('title', 'Role')} at {exp.get('company', 'Company')} ({exp.get('duration', 'N/A')}):\n"
                 for resp in exp.get('responsibilities', []):
                     result += f"  - {resp}\n"
             return result
 
         elif section == "skills":
             skills = self.resume.get('skills', {})
-            return f"""Candidate's skills:
+            if isinstance(skills, dict):
+                return f"""Candidate's skills:
 Languages: {', '.join(skills.get('languages', []))}
 Frontend: {', '.join(skills.get('frontend', []))}
 Backend: {', '.join(skills.get('backend', []))}
 Tools: {', '.join(skills.get('tools', []))}"""
+            return f"Skills: {skills}"
 
         elif section == "education":
-            edu = self.resume.get('education', [{}])[0]
-            return f"Education: {edu.get('degree')} from {edu.get('school')} ({edu.get('year')})"
+            education = self.resume.get('education', [{}])
+            if isinstance(education, list) and len(education) > 0:
+                edu = education[0]
+                return f"Education: {edu.get('degree')} from {edu.get('school')} ({edu.get('year')})"
+            return "Education: Not specified"
 
         elif section == "certifications":
-            return f"Certifications: {', '.join(self.resume.get('certifications', []))}"
+            certs = self.resume.get('certifications', [])
+            return f"Certifications: {', '.join(certs) if certs else 'None listed'}"
 
         else:
             return f"Unknown section: {section}. Available: experience, skills, education, certifications"
@@ -164,15 +182,17 @@ Tools: {', '.join(skills.get('tools', []))}"""
         """Get the detailed job requirements to formulate relevant questions."""
         reqs = self.job.get('requirements', {})
 
-        result = "Must-have requirements:\n"
-        for req in reqs.get('must_have', []):
-            result += f"  - {req}\n"
+        if isinstance(reqs, dict):
+            result = "Must-have requirements:\n"
+            for req in reqs.get('must_have', []):
+                result += f"  - {req}\n"
 
-        result += "\nNice-to-have:\n"
-        for req in reqs.get('nice_to_have', []):
-            result += f"  - {req}\n"
+            result += "\nNice-to-have:\n"
+            for req in reqs.get('nice_to_have', []):
+                result += f"  - {req}\n"
+            return result
 
-        return result
+        return f"Requirements: {reqs}"
 
     @function_tool
     async def track_question(self, context: RunContext) -> str:
@@ -192,8 +212,8 @@ Tools: {', '.join(skills.get('tools', []))}"""
         """End the interview and provide a summary."""
         return f"""Interview complete!
 
-Candidate: {self.resume.get('name')}
-Position: {self.job.get('title')} at {self.job.get('company')}
+Candidate: {self.resume.get('name', 'Candidate')}
+Position: {self.job.get('title', 'Position')} at {self.job.get('company', 'Company')}
 Questions asked: {self.questions_asked}
 
 Thank the candidate for their time, ask if they have any questions about the role or company, and explain that the team will be in touch about next steps."""
@@ -204,6 +224,26 @@ async def entrypoint(ctx: agents.JobContext):
     import asyncio
     import logging
     logger = logging.getLogger("interview-agent")
+
+    # Get resume and job from room metadata
+    metadata = ctx.room.metadata
+    logger.info(f"Room metadata: {metadata}")
+
+    if metadata:
+        try:
+            data = json.loads(metadata)
+            resume = data.get('resume', {})
+            job = data.get('job', {})
+            logger.info(f"Loaded resume for: {resume.get('name', 'Unknown')}")
+            logger.info(f"Loaded job: {job.get('title', 'Unknown')} at {job.get('company', 'Unknown')}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse room metadata: {e}")
+            resume = {}
+            job = {}
+    else:
+        logger.warning("No room metadata found, using empty resume and job")
+        resume = {}
+        job = {}
 
     session = AgentSession(
         stt=deepgram.STT(model="nova-2"),
@@ -228,7 +268,7 @@ async def entrypoint(ctx: agents.JobContext):
 
     await session.start(
         room=ctx.room,
-        agent=JobInterviewer()
+        agent=JobInterviewer(resume=resume, job=job)
     )
 
     await session.generate_reply(

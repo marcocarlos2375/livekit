@@ -10,28 +10,180 @@
 
     <main class="max-w-4xl mx-auto px-4 py-8">
 
-      <!-- Main State Display -->
-      <div class="bg-slate-800/50 rounded-2xl border border-slate-700 p-8 mb-6">
+      <!-- Setup Phase: Select Resume and Job -->
+      <div v-if="interviewState === 'setup'" class="space-y-6">
 
-        <!-- Idle State -->
-        <div v-if="interviewState === 'idle'" class="text-center">
-          <div class="w-24 h-24 mx-auto mb-6 bg-slate-700 rounded-full flex items-center justify-center">
-            <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+        <!-- Resume Selection -->
+        <div class="bg-slate-800/50 rounded-2xl border border-slate-700 p-6">
+          <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
+            Select Resume
+          </h2>
+
+          <!-- Resume Options -->
+          <div class="grid gap-3 mb-4">
+            <button
+              v-for="resume in sampleResumes"
+              :key="resume.id"
+              @click="selectedResume = resume"
+              :class="[
+                'p-4 rounded-xl border text-left transition-all',
+                selectedResume?.id === resume.id
+                  ? 'border-emerald-500 bg-emerald-500/10'
+                  : 'border-slate-600 hover:border-slate-500 bg-slate-700/30'
+              ]"
+            >
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="font-medium text-white">{{ resume.name }}</h3>
+                  <p class="text-sm text-slate-400 mt-1">{{ resume.experience[0]?.title }} at {{ resume.experience[0]?.company }}</p>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <span
+                      v-for="skill in resume.skills.languages.slice(0, 4)"
+                      :key="skill"
+                      class="px-2 py-0.5 text-xs bg-slate-600 text-slate-300 rounded"
+                    >
+                      {{ skill }}
+                    </span>
+                  </div>
+                </div>
+                <div v-if="selectedResume?.id === resume.id" class="text-emerald-500">
+                  <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                  </svg>
+                </div>
+              </div>
+            </button>
           </div>
-          <h2 class="text-2xl font-bold text-white mb-2">Ready to Practice?</h2>
-          <p class="text-slate-400 mb-6">Start your mock interview with Sarah Mitchell</p>
+
+          <!-- Custom Resume Toggle -->
           <button
-            @click="startInterview"
-            class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl transition-all transform hover:scale-105"
+            @click="showCustomResume = !showCustomResume"
+            class="text-sm text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
           >
-            Start Interview
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Or paste custom resume JSON
           </button>
+
+          <div v-if="showCustomResume" class="mt-3">
+            <textarea
+              v-model="customResumeJson"
+              placeholder='{"name": "Your Name", "summary": "...", "experience": [...], "skills": {...}}'
+              class="w-full h-32 bg-slate-700 border border-slate-600 rounded-lg p-3 text-white text-sm font-mono placeholder-slate-500 focus:border-emerald-500 focus:outline-none"
+            ></textarea>
+            <button
+              @click="parseCustomResume"
+              class="mt-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg"
+            >
+              Use Custom Resume
+            </button>
+            <p v-if="customResumeError" class="mt-2 text-red-400 text-sm">{{ customResumeError }}</p>
+          </div>
         </div>
 
+        <!-- Job Description Selection -->
+        <div class="bg-slate-800/50 rounded-2xl border border-slate-700 p-6">
+          <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Select Job Description
+          </h2>
+
+          <!-- Job Options -->
+          <div class="grid gap-3 mb-4">
+            <button
+              v-for="job in sampleJobs"
+              :key="job.id"
+              @click="selectedJob = job"
+              :class="[
+                'p-4 rounded-xl border text-left transition-all',
+                selectedJob?.id === job.id
+                  ? 'border-blue-500 bg-blue-500/10'
+                  : 'border-slate-600 hover:border-slate-500 bg-slate-700/30'
+              ]"
+            >
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="font-medium text-white">{{ job.title }}</h3>
+                  <p class="text-sm text-slate-400 mt-1">{{ job.company }}</p>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <span
+                      v-for="req in job.requirements.must_have.slice(0, 3)"
+                      :key="req"
+                      class="px-2 py-0.5 text-xs bg-slate-600 text-slate-300 rounded"
+                    >
+                      {{ req.split(' ').slice(0, 3).join(' ') }}...
+                    </span>
+                  </div>
+                </div>
+                <div v-if="selectedJob?.id === job.id" class="text-blue-500">
+                  <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                  </svg>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Custom Job Toggle -->
+          <button
+            @click="showCustomJob = !showCustomJob"
+            class="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Or paste custom job description JSON
+          </button>
+
+          <div v-if="showCustomJob" class="mt-3">
+            <textarea
+              v-model="customJobJson"
+              placeholder='{"title": "Job Title", "company": "...", "requirements": {...}}'
+              class="w-full h-32 bg-slate-700 border border-slate-600 rounded-lg p-3 text-white text-sm font-mono placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+            ></textarea>
+            <button
+              @click="parseCustomJob"
+              class="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg"
+            >
+              Use Custom Job
+            </button>
+            <p v-if="customJobError" class="mt-2 text-red-400 text-sm">{{ customJobError }}</p>
+          </div>
+        </div>
+
+        <!-- Start Button -->
+        <div class="text-center pt-4">
+          <button
+            @click="startInterview"
+            :disabled="!selectedResume || !selectedJob"
+            :class="[
+              'px-8 py-4 text-lg font-medium rounded-xl transition-all transform',
+              selectedResume && selectedJob
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white hover:scale-105'
+                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+            ]"
+          >
+            <span v-if="selectedResume && selectedJob">Start Interview</span>
+            <span v-else>Select Resume and Job to Continue</span>
+          </button>
+          <p v-if="selectedResume && selectedJob" class="mt-3 text-slate-400 text-sm">
+            Interviewing <span class="text-emerald-400">{{ selectedResume.name }}</span>
+            for <span class="text-blue-400">{{ selectedJob.title }}</span> at {{ selectedJob.company }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Main State Display (Interview Phase) -->
+      <div v-else class="bg-slate-800/50 rounded-2xl border border-slate-700 p-8 mb-6">
+
         <!-- Initializing State -->
-        <div v-else-if="interviewState === 'initializing'" class="text-center">
+        <div v-if="interviewState === 'initializing'" class="text-center">
           <div class="w-24 h-24 mx-auto mb-6 relative">
             <div class="absolute inset-0 bg-yellow-500/20 rounded-full animate-ping"></div>
             <div class="relative w-full h-full bg-yellow-500/30 rounded-full flex items-center justify-center">
@@ -53,7 +205,6 @@
         <!-- Speaking State (Agent is speaking) -->
         <div v-else-if="interviewState === 'speaking'" class="text-center">
           <div class="w-32 h-32 mx-auto mb-6 relative">
-            <!-- Animated rings -->
             <div class="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping"></div>
             <div class="absolute inset-2 bg-emerald-500/30 rounded-full animate-pulse"></div>
             <div class="relative w-full h-full bg-emerald-600 rounded-full flex items-center justify-center">
@@ -62,7 +213,6 @@
           </div>
           <h2 class="text-2xl font-bold text-white mb-2">Sarah is Speaking</h2>
           <p class="text-emerald-400">Listen to the question...</p>
-          <!-- Sound wave animation -->
           <div class="mt-6 flex justify-center items-end gap-1 h-12">
             <span v-for="i in 7" :key="i"
               class="w-2 bg-emerald-500 rounded-full animate-pulse"
@@ -81,7 +231,6 @@
             <div class="relative w-full h-full bg-purple-600 rounded-full flex items-center justify-center">
               <span class="text-white text-3xl font-bold">SM</span>
             </div>
-            <!-- Thinking dots -->
             <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
               <div class="flex gap-0.5">
                 <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style="animation-delay: 0s"></span>
@@ -92,7 +241,6 @@
           </div>
           <h2 class="text-2xl font-bold text-white mb-2">Sarah is Thinking</h2>
           <p class="text-purple-400">Processing your response...</p>
-          <!-- Thinking animation -->
           <div class="mt-6 flex justify-center gap-2">
             <span class="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style="animation-delay: 0s"></span>
             <span class="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style="animation-delay: 0.15s"></span>
@@ -106,7 +254,6 @@
             <div class="relative w-full h-full bg-slate-700 rounded-full flex items-center justify-center border-4 border-blue-500">
               <span class="text-white text-3xl font-bold">SM</span>
             </div>
-            <!-- Listening indicator -->
             <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
               <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
@@ -115,7 +262,6 @@
           </div>
           <h2 class="text-2xl font-bold text-white mb-2">Your Turn</h2>
           <p class="text-blue-400">Sarah is listening to you...</p>
-          <!-- Mic level indicator -->
           <div class="mt-6 max-w-xs mx-auto">
             <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
               <div
@@ -139,7 +285,6 @@
           </div>
           <h2 class="text-2xl font-bold text-white mb-2">You're Speaking</h2>
           <p class="text-blue-400">Keep going, Sarah is listening...</p>
-          <!-- Sound wave animation -->
           <div class="mt-6 flex justify-center items-end gap-1 h-12">
             <span v-for="i in 7" :key="i"
               class="w-2 bg-blue-500 rounded-full"
@@ -152,7 +297,7 @@
         </div>
 
         <!-- End Interview Button (when connected) -->
-        <div v-if="interviewState !== 'idle' && interviewState !== 'initializing'" class="mt-8 pt-6 border-t border-slate-700 flex justify-center gap-4">
+        <div v-if="interviewState !== 'setup'" class="mt-8 pt-6 border-t border-slate-700 flex justify-center gap-4">
           <button
             @click="toggleMute"
             :class="[
@@ -179,7 +324,7 @@
       </div>
 
       <!-- Status Bar -->
-      <div v-if="interviewState !== 'idle'" class="bg-slate-800/50 rounded-xl border border-slate-700 p-4 mb-6">
+      <div v-if="interviewState !== 'setup'" class="bg-slate-800/50 rounded-xl border border-slate-700 p-4 mb-6">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div :class="[
@@ -194,14 +339,15 @@
               {{ statusText }}
             </span>
           </div>
-          <div class="text-slate-500 text-sm">
-            {{ formatDuration(interviewDuration) }}
+          <div class="flex items-center gap-4 text-slate-500 text-sm">
+            <span v-if="selectedResume">{{ selectedResume.name }}</span>
+            <span>{{ formatDuration(interviewDuration) }}</span>
           </div>
         </div>
       </div>
 
       <!-- Transcription -->
-      <div v-if="interviewState !== 'idle' && interviewState !== 'initializing'" class="bg-slate-800/50 rounded-2xl border border-slate-700 p-6">
+      <div v-if="interviewState !== 'setup' && interviewState !== 'initializing'" class="bg-slate-800/50 rounded-2xl border border-slate-700 p-6">
         <h2 class="text-white font-medium mb-4 flex items-center gap-2">
           <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -238,49 +384,37 @@
           </div>
         </div>
       </div>
-
-      <!-- Instructions (when idle) -->
-      <div v-if="interviewState === 'idle'" class="bg-slate-800/50 rounded-2xl border border-slate-700 p-6">
-        <h2 class="text-white font-medium mb-4">How it works</h2>
-        <ol class="space-y-3 text-slate-300">
-          <li class="flex gap-3">
-            <span class="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0">1</span>
-            <span>Click "Start Interview" to connect with Sarah, your AI interviewer</span>
-          </li>
-          <li class="flex gap-3">
-            <span class="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0">2</span>
-            <span>Allow microphone access when prompted</span>
-          </li>
-          <li class="flex gap-3">
-            <span class="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0">3</span>
-            <span>Sarah will introduce herself and ask questions based on your resume</span>
-          </li>
-          <li class="flex gap-3">
-            <span class="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0">4</span>
-            <span>Answer naturally - it's just like a real interview!</span>
-          </li>
-        </ol>
-      </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import { Room, RoomEvent, Track, ConnectionState, RemoteTrack, RemoteParticipant, Participant } from 'livekit-client'
+import { sampleResumes, sampleJobs, type Resume, type JobDescription } from '~/data/samples'
 
 const config = useRuntimeConfig()
 
-// Interview states: idle -> initializing -> listening/thinking/speaking/userSpeaking
-type InterviewState = 'idle' | 'initializing' | 'listening' | 'thinking' | 'speaking' | 'userSpeaking'
+// Interview states: setup -> initializing -> listening/thinking/speaking/userSpeaking
+type InterviewState = 'setup' | 'initializing' | 'listening' | 'thinking' | 'speaking' | 'userSpeaking'
 
-const interviewState = ref<InterviewState>('idle')
+const interviewState = ref<InterviewState>('setup')
 const isMuted = ref(false)
 const audioLevel = ref(0)
 const transcript = ref<Array<{ speaker: 'agent' | 'user', text: string }>>([])
 const transcriptContainer = ref<HTMLElement | null>(null)
 const interviewDuration = ref(0)
-const agentState = ref<string>('listening') // State from backend
-const agentHasSpoken = ref(false) // Track if agent has spoken at least once
+const agentState = ref<string>('listening')
+const agentHasSpoken = ref(false)
+
+// Selection state
+const selectedResume = ref<Resume | null>(null)
+const selectedJob = ref<JobDescription | null>(null)
+const showCustomResume = ref(false)
+const showCustomJob = ref(false)
+const customResumeJson = ref('')
+const customJobJson = ref('')
+const customResumeError = ref('')
+const customJobError = ref('')
 
 let room: Room | null = null
 let audioContext: AudioContext | null = null
@@ -304,35 +438,60 @@ const formatDuration = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
+// Parse custom resume JSON
+const parseCustomResume = () => {
+  try {
+    const parsed = JSON.parse(customResumeJson.value)
+    if (!parsed.name || !parsed.experience) {
+      throw new Error('Resume must have name and experience fields')
+    }
+    selectedResume.value = { id: 'custom', ...parsed }
+    customResumeError.value = ''
+    showCustomResume.value = false
+  } catch (e: any) {
+    customResumeError.value = e.message || 'Invalid JSON'
+  }
+}
+
+// Parse custom job JSON
+const parseCustomJob = () => {
+  try {
+    const parsed = JSON.parse(customJobJson.value)
+    if (!parsed.title || !parsed.company) {
+      throw new Error('Job must have title and company fields')
+    }
+    selectedJob.value = { id: 'custom', ...parsed }
+    customJobError.value = ''
+    showCustomJob.value = false
+  } catch (e: any) {
+    customJobError.value = e.message || 'Invalid JSON'
+  }
+}
+
 // Update interview state based on agent state from backend
 const updateInterviewState = () => {
-  if (interviewState.value === 'idle') return
+  if (interviewState.value === 'setup') return
 
   switch (agentState.value) {
     case 'speaking':
-      // Agent is speaking - mark that agent has spoken and update state
       agentHasSpoken.value = true
       interviewState.value = 'speaking'
       break
     case 'thinking':
-      // Only show thinking if agent has spoken at least once
       if (agentHasSpoken.value) {
         interviewState.value = 'thinking'
       }
       break
     case 'listening':
-      // Only show listening/userSpeaking states after agent has spoken once
       if (agentHasSpoken.value) {
         if (interviewState.value !== 'userSpeaking') {
           interviewState.value = 'listening'
         }
       } else {
-        // Agent hasn't spoken yet, stay in initializing
         interviewState.value = 'initializing'
       }
       break
     default:
-      // Default: stay in initializing until agent speaks
       if (!agentHasSpoken.value) {
         interviewState.value = 'initializing'
       }
@@ -340,28 +499,35 @@ const updateInterviewState = () => {
 }
 
 const startInterview = async () => {
+  if (!selectedResume.value || !selectedJob.value) return
+
   interviewState.value = 'initializing'
 
   try {
-    // Get token from API
-    const { token } = await $fetch<{ token: string }>('/api/token')
+    // Get token from API with resume and job data
+    const { token } = await $fetch<{ token: string }>('/api/token', {
+      method: 'POST',
+      body: {
+        resume: selectedResume.value,
+        job: selectedJob.value
+      }
+    })
 
     // Create and connect to room
     room = new Room()
 
     room.on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
       if (state === ConnectionState.Connected) {
-        interviewState.value = 'listening'
-        // Start duration timer
+        // Stay in initializing until agent speaks
         durationInterval = setInterval(() => {
           interviewDuration.value++
         }, 1000)
       } else if (state === ConnectionState.Disconnected) {
-        interviewState.value = 'idle'
+        interviewState.value = 'setup'
       }
     })
 
-    // Handle agent audio - attach audio element
+    // Handle agent audio
     room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _publication, participant: RemoteParticipant) => {
       if (track.kind === Track.Kind.Audio && participant.identity.startsWith('agent')) {
         const audioElement = track.attach()
@@ -375,7 +541,7 @@ const startInterview = async () => {
       }
     })
 
-    // Listen for agent state changes from backend (the reliable source)
+    // Listen for agent state changes from backend
     room.on(RoomEvent.ParticipantAttributesChanged, (changedAttributes: Record<string, string>, participant: Participant) => {
       console.log('Attributes changed:', participant.identity, changedAttributes)
       if (participant.identity.startsWith('agent') && changedAttributes.agent_state) {
@@ -385,7 +551,7 @@ const startInterview = async () => {
       }
     })
 
-    // Also check existing participants for attributes when they connect
+    // Check existing participants
     room.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
       console.log('Participant connected:', participant.identity, participant.attributes)
       if (participant.identity.startsWith('agent')) {
@@ -397,7 +563,6 @@ const startInterview = async () => {
       }
     })
 
-    // Check all remote participants on connect for agent
     room.on(RoomEvent.Connected, () => {
       room?.remoteParticipants.forEach((participant) => {
         console.log('Existing participant:', participant.identity, participant.attributes)
@@ -411,11 +576,10 @@ const startInterview = async () => {
       })
     })
 
-    // Handle active speaker changes (for detecting user speaking)
+    // Handle active speaker changes
     room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
       const userIsSpeaking = speakers.some(s => !s.identity.startsWith('agent'))
 
-      // Only update to userSpeaking if agent is in listening state AND has spoken at least once
       if (userIsSpeaking && agentState.value === 'listening' && agentHasSpoken.value) {
         interviewState.value = 'userSpeaking'
       } else {
@@ -432,7 +596,6 @@ const startInterview = async () => {
             speaker: isAgent ? 'agent' : 'user',
             text: segment.text
           })
-          // Auto-scroll
           nextTick(() => {
             if (transcriptContainer.value) {
               transcriptContainer.value.scrollTop = transcriptContainer.value.scrollHeight
@@ -443,16 +606,12 @@ const startInterview = async () => {
     })
 
     await room.connect(config.public.livekitUrl, token)
-
-    // Enable microphone
     await room.localParticipant.setMicrophoneEnabled(true)
-
-    // Set up audio level monitoring
     setupAudioMonitoring()
 
   } catch (error) {
     console.error('Failed to connect:', error)
-    interviewState.value = 'idle'
+    interviewState.value = 'setup'
   }
 }
 
@@ -465,7 +624,7 @@ const endInterview = async () => {
     clearInterval(durationInterval)
     durationInterval = null
   }
-  interviewState.value = 'idle'
+  interviewState.value = 'setup'
   transcript.value = []
   audioLevel.value = 0
   interviewDuration.value = 0
@@ -496,22 +655,19 @@ const setupAudioMonitoring = () => {
   let silenceTimer: NodeJS.Timeout | null = null
 
   const updateLevel = () => {
-    if (!analyser || interviewState.value === 'idle') return
+    if (!analyser || interviewState.value === 'setup') return
     analyser.getByteFrequencyData(dataArray)
     const average = dataArray.reduce((a, b) => a + b) / dataArray.length
     audioLevel.value = Math.min(100, average * 1.5)
 
-    // Only handle user speaking detection when agent is listening AND has spoken at least once
     if (agentState.value === 'listening' && agentHasSpoken.value) {
       if (audioLevel.value > 15) {
-        // User is speaking
         interviewState.value = 'userSpeaking'
         if (silenceTimer) {
           clearTimeout(silenceTimer)
           silenceTimer = null
         }
       } else if (audioLevel.value < 10 && interviewState.value === 'userSpeaking') {
-        // User stopped speaking - wait a bit before switching to listening
         if (!silenceTimer) {
           silenceTimer = setTimeout(() => {
             if (agentState.value === 'listening') {
@@ -522,7 +678,6 @@ const setupAudioMonitoring = () => {
         }
       }
     } else {
-      // Agent is speaking or thinking - follow agent state
       updateInterviewState()
     }
 
