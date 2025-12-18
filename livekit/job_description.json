@@ -1,0 +1,50 @@
+{
+  "title": "Senior Full-Stack Engineer",
+  "company": "InnovateTech",
+  "location": "San Francisco, CA (Hybrid)",
+  "salary_range": "$150,000 - $180,000",
+  "about_company": "InnovateTech is a fast-growing fintech startup revolutionizing how people manage their personal finances. We have 50 employees and recently raised our Series B funding.",
+  "about_role": "We're looking for a Senior Full-Stack Engineer to join our core product team. You'll be building features that directly impact millions of users and working closely with product and design teams.",
+  "responsibilities": [
+    "Design and implement new features for our web and mobile applications",
+    "Write clean, maintainable, and well-tested code",
+    "Collaborate with product managers and designers to define technical requirements",
+    "Mentor junior engineers and conduct code reviews",
+    "Participate in architectural decisions and technical planning",
+    "Troubleshoot and debug production issues",
+    "Contribute to improving our engineering practices and tools"
+  ],
+  "requirements": {
+    "must_have": [
+      "5+ years of professional software development experience",
+      "Strong proficiency in React and TypeScript",
+      "Experience with Node.js or Python backend development",
+      "Experience with SQL databases (PostgreSQL preferred)",
+      "Familiarity with cloud services (AWS, GCP, or Azure)",
+      "Experience with CI/CD pipelines and DevOps practices",
+      "Strong communication and collaboration skills"
+    ],
+    "nice_to_have": [
+      "Experience in fintech or financial services",
+      "Experience with microservices architecture",
+      "Knowledge of security best practices",
+      "Experience mentoring junior developers",
+      "Open source contributions"
+    ]
+  },
+  "benefits": [
+    "Competitive salary and equity",
+    "Health, dental, and vision insurance",
+    "Flexible PTO policy",
+    "Remote work options",
+    "Learning and development budget",
+    "401(k) matching"
+  ],
+  "interview_process": [
+    "Initial phone screen with recruiter",
+    "Technical phone interview",
+    "Take-home coding assignment",
+    "Virtual onsite (4 rounds)",
+    "Final conversation with hiring manager"
+  ]
+}

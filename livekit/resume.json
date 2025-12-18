@@ -1,0 +1,61 @@
+{
+  "name": "John Smith",
+  "email": "john.smith@email.com",
+  "phone": "+1 (555) 123-4567",
+  "location": "San Francisco, CA",
+  "summary": "Full-stack software engineer with 5 years of experience building scalable web applications. Passionate about clean code, user experience, and mentoring junior developers.",
+  "experience": [
+    {
+      "title": "Senior Software Engineer",
+      "company": "TechCorp Inc.",
+      "location": "San Francisco, CA",
+      "duration": "2022 - Present",
+      "responsibilities": [
+        "Led development of microservices architecture serving 2M+ daily users",
+        "Reduced API response time by 40% through database optimization",
+        "Mentored team of 4 junior developers",
+        "Implemented CI/CD pipelines using GitHub Actions"
+      ]
+    },
+    {
+      "title": "Software Engineer",
+      "company": "StartupXYZ",
+      "location": "Remote",
+      "duration": "2020 - 2022",
+      "responsibilities": [
+        "Built React frontend for e-commerce platform",
+        "Developed RESTful APIs using Node.js and Express",
+        "Integrated payment systems (Stripe, PayPal)",
+        "Collaborated with design team on UI/UX improvements"
+      ]
+    },
+    {
+      "title": "Junior Developer",
+      "company": "WebAgency",
+      "location": "New York, NY",
+      "duration": "2019 - 2020",
+      "responsibilities": [
+        "Developed WordPress sites for small businesses",
+        "Created custom themes and plugins",
+        "Provided technical support to clients"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B.S. Computer Science",
+      "school": "University of California, Berkeley",
+      "year": "2019"
+    }
+  ],
+  "skills": {
+    "languages": ["JavaScript", "TypeScript", "Python", "SQL"],
+    "frontend": ["React", "Next.js", "Vue.js", "Tailwind CSS"],
+    "backend": ["Node.js", "Express", "FastAPI", "PostgreSQL", "MongoDB"],
+    "tools": ["Git", "Docker", "AWS", "GitHub Actions", "Jira"]
+  },
+  "certifications": [
+    "AWS Certified Developer - Associate",
+    "MongoDB Certified Developer"
+  ]
+}

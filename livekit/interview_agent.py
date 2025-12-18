@@ -1,7 +1,8 @@
 """
-Technical Interview Simulator
-=============================
-A voice-based AI interviewer that conducts technical interviews.
+Job Interview Simulator
+=======================
+A voice-based AI interviewer that conducts personalized interviews
+based on the candidate's resume and the target job description.
 """
 
 from dotenv import load_dotenv
@@ -10,137 +11,175 @@ from livekit.agents import Agent, AgentSession, RunContext
 from livekit.agents.llm import function_tool
 from livekit.plugins import openai, deepgram, silero
 import os
-import random
+import json
 
 load_dotenv(".env")
 
 
-class TechnicalInterviewer(Agent):
-    """AI Technical Interviewer that asks coding and system design questions."""
+def load_json_file(filename: str) -> dict:
+    """Load a JSON file from the same directory."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    filepath = os.path.join(script_dir, filename)
+    with open(filepath, 'r') as f:
+        return json.load(f)
+
+
+class JobInterviewer(Agent):
+    """AI Interviewer that asks questions based on resume and job description."""
 
     def __init__(self):
+        # Load resume and job description
+        self.resume = load_json_file("resume.json")
+        self.job = load_json_file("job_description.json")
+
+        # Build context for the interviewer
+        resume_summary = self._format_resume()
+        job_summary = self._format_job()
+
         super().__init__(
-            instructions="""You are a friendly but professional technical interviewer at a top tech company.
+            instructions=f"""You are a professional interviewer conducting a job interview for the position of {self.job['title']} at {self.job['company']}.
 
-Your role:
-- Conduct a technical interview with the candidate
-- Ask one question at a time and wait for their response
-- Listen carefully to answers and ask follow-up questions when needed
-- Provide brief encouragement but stay professional
-- After each answer, give brief feedback (1-2 sentences) then move to the next question
+You have access to the candidate's resume and the job description. Your goal is to:
+1. Assess if the candidate is a good fit for the role
+2. Ask questions that relate their past experience to the job requirements
+3. Evaluate both technical skills and soft skills
+4. Be professional but friendly and conversational
 
-Interview style:
-- Be conversational and natural, like a real interview
-- If the candidate is stuck, offer a small hint
+CANDIDATE'S RESUME:
+{resume_summary}
+
+JOB DESCRIPTION:
+{job_summary}
+
+INTERVIEW GUIDELINES:
+- Start by introducing yourself and the role briefly
+- Ask one question at a time and listen carefully to the response
+- Reference specific items from their resume when asking follow-up questions
+- Mix behavioral questions (past experience) with situational questions (hypotheticals)
+- Ask about gaps or transitions in their career if relevant
 - Keep responses concise - this is a voice conversation
-- Don't repeat the question unless asked
+- After 5-7 questions, wrap up the interview professionally
 
-Start by introducing yourself briefly and asking the first question."""
+QUESTION TYPES TO INCLUDE:
+1. Experience-based: "I see you worked on X at Y company. Can you tell me more about..."
+2. Technical: Questions about their listed skills relevant to the job
+3. Behavioral: "Tell me about a time when..." (related to job requirements)
+4. Situational: "How would you handle..." (based on job responsibilities)
+5. Motivation: Why they want this role, what interests them about the company"""
         )
 
-        self.questions = {
-            "python": [
-                "What's the difference between a list and a tuple in Python?",
-                "Explain what a decorator is and give an example of when you'd use one.",
-                "What are Python generators and why would you use them?",
-                "How does garbage collection work in Python?",
-                "What's the difference between deep copy and shallow copy?",
-            ],
-            "javascript": [
-                "Explain the difference between let, const, and var.",
-                "What is the event loop in JavaScript and how does it work?",
-                "What's the difference between == and === in JavaScript?",
-                "Explain closures and give an example.",
-                "What are Promises and how do they differ from callbacks?",
-            ],
-            "system_design": [
-                "How would you design a URL shortener like bit.ly?",
-                "Walk me through how you'd design a rate limiter.",
-                "How would you design a cache system for a web application?",
-                "Explain how you'd design a simple chat application.",
-                "How would you handle file uploads for a system with millions of users?",
-            ],
-            "data_structures": [
-                "What's the difference between an array and a linked list? When would you use each?",
-                "Explain how a hash table works and what its time complexity is.",
-                "What's the difference between a stack and a queue?",
-                "When would you use a tree versus a graph data structure?",
-                "Explain what Big O notation means and why it matters.",
-            ],
-            "general": [
-                "Tell me about a challenging technical problem you solved recently.",
-                "How do you approach debugging a complex issue?",
-                "What's your process for learning a new technology?",
-                "How do you handle technical disagreements with teammates?",
-                "Describe your ideal development workflow.",
-            ],
-        }
+        self.questions_asked = 0
+        self.max_questions = 7
 
-        self.current_topic = None
-        self.questions_asked = []
-        self.current_question_index = 0
-        self.max_questions = 5
+    def _format_resume(self) -> str:
+        """Format resume data into readable text."""
+        r = self.resume
+
+        # Format experience
+        exp_text = ""
+        for exp in r.get('experience', []):
+            exp_text += f"\n- {exp['title']} at {exp['company']} ({exp['duration']})"
+            for resp in exp.get('responsibilities', [])[:2]:
+                exp_text += f"\n  * {resp}"
+
+        # Format skills
+        skills = r.get('skills', {})
+        skills_text = ", ".join(skills.get('languages', []) + skills.get('frontend', [])[:2] + skills.get('backend', [])[:2])
+
+        return f"""Name: {r.get('name')}
+Summary: {r.get('summary')}
+Experience:{exp_text}
+Education: {r.get('education', [{}])[0].get('degree', 'N/A')} from {r.get('education', [{}])[0].get('school', 'N/A')}
+Key Skills: {skills_text}
+Certifications: {', '.join(r.get('certifications', []))}"""
+
+    def _format_job(self) -> str:
+        """Format job description into readable text."""
+        j = self.job
+
+        reqs = j.get('requirements', {})
+        must_have = ", ".join(reqs.get('must_have', [])[:5])
+
+        return f"""Position: {j.get('title')}
+Company: {j.get('company')}
+About: {j.get('about_company')}
+Role: {j.get('about_role')}
+Key Requirements: {must_have}
+Responsibilities: {', '.join(j.get('responsibilities', [])[:3])}"""
 
     @function_tool
-    async def start_interview(self, context: RunContext, topic: str) -> str:
-        """Start the interview with a specific topic.
+    async def get_resume_detail(self, context: RunContext, section: str) -> str:
+        """Get specific details from the candidate's resume.
 
         Args:
-            topic: The topic to focus on - python, javascript, system_design, data_structures, or general
+            section: The section to retrieve - experience, skills, education, or certifications
         """
-        topic_lower = topic.lower().replace(" ", "_")
+        section = section.lower()
 
-        if topic_lower not in self.questions:
-            available = ", ".join(self.questions.keys())
-            return f"Topic '{topic}' not available. Choose from: {available}"
+        if section == "experience":
+            result = "Candidate's work experience:\n"
+            for exp in self.resume.get('experience', []):
+                result += f"\n{exp['title']} at {exp['company']} ({exp['duration']}):\n"
+                for resp in exp.get('responsibilities', []):
+                    result += f"  - {resp}\n"
+            return result
 
-        self.current_topic = topic_lower
-        self.questions_asked = random.sample(self.questions[topic_lower],
-                                             min(self.max_questions, len(self.questions[topic_lower])))
-        self.current_question_index = 0
+        elif section == "skills":
+            skills = self.resume.get('skills', {})
+            return f"""Candidate's skills:
+Languages: {', '.join(skills.get('languages', []))}
+Frontend: {', '.join(skills.get('frontend', []))}
+Backend: {', '.join(skills.get('backend', []))}
+Tools: {', '.join(skills.get('tools', []))}"""
 
-        return f"Starting {topic} interview with {len(self.questions_asked)} questions. First question: {self.questions_asked[0]}"
+        elif section == "education":
+            edu = self.resume.get('education', [{}])[0]
+            return f"Education: {edu.get('degree')} from {edu.get('school')} ({edu.get('year')})"
 
-    @function_tool
-    async def next_question(self, context: RunContext) -> str:
-        """Move to the next interview question."""
-        if not self.current_topic:
-            return "No interview started. Ask the candidate which topic they'd like to focus on: Python, JavaScript, System Design, Data Structures, or General."
+        elif section == "certifications":
+            return f"Certifications: {', '.join(self.resume.get('certifications', []))}"
 
-        self.current_question_index += 1
-
-        if self.current_question_index >= len(self.questions_asked):
-            return "INTERVIEW_COMPLETE: All questions have been asked. Provide a brief summary of how the candidate did and thank them for their time."
-
-        return f"Next question ({self.current_question_index + 1}/{len(self.questions_asked)}): {self.questions_asked[self.current_question_index]}"
-
-    @function_tool
-    async def get_hint(self, context: RunContext) -> str:
-        """Provide a hint for the current question if the candidate is stuck."""
-        if not self.current_topic or self.current_question_index >= len(self.questions_asked):
-            return "No current question to provide a hint for."
-
-        hints = {
-            "What's the difference between a list and a tuple in Python?":
-                "Think about mutability - can you change the contents after creation?",
-            "Explain what a decorator is and give an example of when you'd use one.":
-                "Think of it as a wrapper around a function. Common uses include logging or timing.",
-            "How would you design a URL shortener like bit.ly?":
-                "Consider: How do you generate short codes? Where do you store mappings? How do you handle collisions?",
-            "What's the difference between an array and a linked list?":
-                "Think about memory layout and how that affects insertion, deletion, and access times.",
-        }
-
-        current_q = self.questions_asked[self.current_question_index]
-        return hints.get(current_q, "Think about the core concepts involved and try to explain your reasoning step by step.")
+        else:
+            return f"Unknown section: {section}. Available: experience, skills, education, certifications"
 
     @function_tool
-    async def get_progress(self, context: RunContext) -> str:
-        """Check how far along the interview is."""
-        if not self.current_topic:
-            return "No interview in progress."
+    async def get_job_requirements(self, context: RunContext) -> str:
+        """Get the detailed job requirements to formulate relevant questions."""
+        reqs = self.job.get('requirements', {})
 
-        return f"Topic: {self.current_topic}, Question {self.current_question_index + 1} of {len(self.questions_asked)}"
+        result = "Must-have requirements:\n"
+        for req in reqs.get('must_have', []):
+            result += f"  - {req}\n"
+
+        result += "\nNice-to-have:\n"
+        for req in reqs.get('nice_to_have', []):
+            result += f"  - {req}\n"
+
+        return result
+
+    @function_tool
+    async def track_question(self, context: RunContext) -> str:
+        """Track that a question was asked. Call this after each question."""
+        self.questions_asked += 1
+        remaining = self.max_questions - self.questions_asked
+
+        if remaining <= 0:
+            return "INTERVIEW_COMPLETE: You've asked enough questions. Please wrap up the interview by thanking the candidate, asking if they have questions, and explaining next steps."
+        elif remaining <= 2:
+            return f"You've asked {self.questions_asked} questions. Start wrapping up soon - {remaining} questions remaining."
+        else:
+            return f"Question {self.questions_asked} of {self.max_questions} asked. Continue with the interview."
+
+    @function_tool
+    async def end_interview(self, context: RunContext) -> str:
+        """End the interview and provide a summary."""
+        return f"""Interview complete!
+
+Candidate: {self.resume.get('name')}
+Position: {self.job.get('title')} at {self.job.get('company')}
+Questions asked: {self.questions_asked}
+
+Thank the candidate for their time, ask if they have any questions about the role or company, and explain that the team will be in touch about next steps."""
 
 
 async def entrypoint(ctx: agents.JobContext):
@@ -155,11 +194,11 @@ async def entrypoint(ctx: agents.JobContext):
 
     await session.start(
         room=ctx.room,
-        agent=TechnicalInterviewer()
+        agent=JobInterviewer()
     )
 
     await session.generate_reply(
-        instructions="Introduce yourself as Alex, a technical interviewer. Ask the candidate which topic they'd like to focus on: Python, JavaScript, System Design, Data Structures, or General technical questions. Keep it brief and friendly."
+        instructions="Introduce yourself as the interviewer for this position. Briefly mention the role and company, then start with your first question. Reference something specific from the candidate's resume to show you've reviewed it."
     )
 
 
