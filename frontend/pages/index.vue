@@ -221,6 +221,76 @@
           </div>
         </div>
 
+        <!-- Interview Type Selection -->
+        <div class="bg-slate-800/50 rounded-2xl border border-slate-700 p-6">
+          <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            {{ selectedLanguage === 'fr' ? 'Type d\'entretien' : 'Interview Type' }}
+          </h2>
+
+          <div class="grid grid-cols-2 gap-4">
+            <button
+              @click="selectedInterviewType = 'general'"
+              :class="[
+                'p-4 rounded-xl border text-left transition-all',
+                selectedInterviewType === 'general'
+                  ? 'border-orange-500 bg-orange-500/10'
+                  : 'border-slate-600 hover:border-slate-500 bg-slate-700/30'
+              ]"
+            >
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="text-2xl">💼</span>
+                    <h3 class="font-medium text-white">{{ selectedLanguage === 'fr' ? 'Général' : 'General' }}</h3>
+                  </div>
+                  <p class="text-sm text-slate-400">
+                    {{ selectedLanguage === 'fr'
+                      ? 'Questions comportementales, soft skills, motivation'
+                      : 'Behavioral questions, soft skills, motivation' }}
+                  </p>
+                </div>
+                <div v-if="selectedInterviewType === 'general'" class="text-orange-500">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                  </svg>
+                </div>
+              </div>
+            </button>
+
+            <button
+              @click="selectedInterviewType = 'technical'"
+              :class="[
+                'p-4 rounded-xl border text-left transition-all',
+                selectedInterviewType === 'technical'
+                  ? 'border-orange-500 bg-orange-500/10'
+                  : 'border-slate-600 hover:border-slate-500 bg-slate-700/30'
+              ]"
+            >
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="text-2xl">🔧</span>
+                    <h3 class="font-medium text-white">{{ selectedLanguage === 'fr' ? 'Technique' : 'Technical' }}</h3>
+                  </div>
+                  <p class="text-sm text-slate-400">
+                    {{ selectedLanguage === 'fr'
+                      ? 'System design, architecture, problem-solving'
+                      : 'System design, architecture, problem-solving' }}
+                  </p>
+                </div>
+                <div v-if="selectedInterviewType === 'technical'" class="text-orange-500">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                  </svg>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
         <!-- Start Button -->
         <div class="text-center pt-4">
           <button
@@ -476,6 +546,8 @@ const selectedLanguage = ref<Language>('en')
 const selectedResume = ref<Resume | null>(null)
 const selectedJob = ref<JobDescription | null>(null)
 const selectedVoice = ref<Voice | null>(availableVoices[0]) // Default to first voice
+type InterviewType = 'general' | 'technical'
+const selectedInterviewType = ref<InterviewType>('general')
 const showCustomResume = ref(false)
 const showCustomJob = ref(false)
 const customResumeJson = ref('')
@@ -613,7 +685,8 @@ const startInterview = async () => {
         resumeId: selectedResume.value.id,
         jobId: selectedJob.value.id,
         voiceId: selectedVoice.value?.id || 'aura-2-thalia-en',
-        language: selectedLanguage.value
+        language: selectedLanguage.value,
+        interviewType: selectedInterviewType.value
       }
     })
 

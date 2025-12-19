@@ -15,8 +15,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Get resume, job, voice IDs, and language from request body
-  const { resumeId, jobId, voiceId, language } = body
+  // Get resume, job, voice IDs, language, and interview type from request body
+  const { resumeId, jobId, voiceId, language, interviewType } = body
 
   if (!resumeId || !jobId) {
     throw createError({
@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
       name: roomName,
       emptyTimeout: 60,          // Delete room 60 seconds after last participant leaves
       maxParticipants: 2,        // Only user + agent
-      metadata: JSON.stringify({ resumeId, jobId, language: language || 'en' })
+      metadata: JSON.stringify({ resumeId, jobId, language: language || 'en', interviewType: interviewType || 'general' })
     })
   } catch (error) {
     console.log('Room may already exist or will be created on join:', error)
@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
   const token = new AccessToken(apiKey, apiSecret, {
     identity: participantIdentity,
     ttl: '30m',  // Token expires in 30 minutes
-    metadata: JSON.stringify({ resumeId, jobId, voiceId: voiceId || 'aura-2-thalia-en', language: language || 'en' })
+    metadata: JSON.stringify({ resumeId, jobId, voiceId: voiceId || 'aura-2-thalia-en', language: language || 'en', interviewType: interviewType || 'general' })
   })
 
   token.addGrant({
