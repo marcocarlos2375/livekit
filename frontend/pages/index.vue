@@ -500,6 +500,14 @@ let audioContext: AudioContext | null = null
 let analyser: AnalyserNode | null = null
 let durationInterval: NodeJS.Timeout | null = null
 
+// Maximum interview duration in seconds (25 minutes)
+const MAX_INTERVIEW_DURATION = 25 * 60
+const WARNING_THRESHOLD = 23 * 60 // Show warning at 23 minutes
+
+// Time remaining warning
+const timeRemaining = computed(() => MAX_INTERVIEW_DURATION - interviewDuration.value)
+const showTimeWarning = computed(() => interviewDuration.value >= WARNING_THRESHOLD && interviewDuration.value < MAX_INTERVIEW_DURATION)
+
 // Interviewer info based on language
 const interviewerName = computed(() => selectedLanguage.value === 'fr' ? 'Marie Dubois' : 'Sarah Mitchell')
 const interviewerInitials = computed(() => selectedLanguage.value === 'fr' ? 'MD' : 'SM')
@@ -617,6 +625,11 @@ const startInterview = async () => {
         // Stay in initializing until agent speaks
         durationInterval = setInterval(() => {
           interviewDuration.value++
+          // Auto-end interview after max duration
+          if (interviewDuration.value >= MAX_INTERVIEW_DURATION) {
+            console.log('Interview timed out after 25 minutes')
+            endInterview()
+          }
         }, 1000)
       } else if (state === ConnectionState.Disconnected) {
         interviewState.value = 'setup'
@@ -633,17 +646,31 @@ const startInterview = async () => {
 
     room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
       if (track.kind === Track.Kind.Audio) {
-        track.detach()
+        const elements = track.detach()
+        elements.forEach(el => el.remove())
       }
     })
 
     // Listen for agent state changes from backend
     room.on(RoomEvent.ParticipantAttributesChanged, (changedAttributes: Record<string, string>, participant: Participant) => {
       console.log('Attributes changed:', participant.identity, changedAttributes)
-      if (participant.identity.startsWith('agent') && changedAttributes.agent_state) {
-        agentState.value = changedAttributes.agent_state
-        console.log('Agent state from backend:', agentState.value)
-        updateInterviewState()
+      if (participant.identity.startsWith('agent')) {
+        // Check if agent ended the interview
+        if (changedAttributes.interview_ended === 'true') {
+          console.log('Agent ended the interview')
+          // Wait 30 seconds for final audio to finish, then end
+          setTimeout(() => {
+            endInterview()
+          }, 30000)
+          return
+        }
+
+        if (changedAttributes.agent_state) {
+          agentState.value = changedAttributes.agent_state
+          console.log('Agent state from backend:', agentState.value)
+          updateInterviewState()
+        }
+
       }
     })
 
@@ -713,6 +740,15 @@ const startInterview = async () => {
 
 const endInterview = async () => {
   if (room) {
+    // Clean up all audio elements before disconnecting
+    room.remoteParticipants.forEach(participant => {
+      participant.audioTrackPublications.forEach(pub => {
+        if (pub.track) {
+          const elements = pub.track.detach()
+          elements.forEach(el => el.remove())
+        }
+      })
+    })
     await room.disconnect()
     room = null
   }
@@ -784,6 +820,15 @@ const setupAudioMonitoring = () => {
 
 onUnmounted(() => {
   if (room) {
+    // Clean up all audio elements
+    room.remoteParticipants.forEach(participant => {
+      participant.audioTrackPublications.forEach(pub => {
+        if (pub.track) {
+          const elements = pub.track.detach()
+          elements.forEach(el => el.remove())
+        }
+      })
+    })
     room.disconnect()
   }
   if (audioContext) {

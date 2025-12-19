@@ -435,6 +435,9 @@ class JobInterviewer(Agent):
         self.resume = resume
         self.job = job
         self.language = language
+        self._agent_session = None  # Will be set after session starts
+        self._room = None  # Will be set after session starts
+        self._job_context = None  # Will be set after session starts
 
         # Build context for the interviewer
         resume_summary = self._format_resume()
@@ -498,7 +501,20 @@ QUESTION TYPES TO INCLUDE:
 2. Technical: Questions about their listed skills relevant to the job
 3. Behavioral: "Tell me about a time when..." (related to job requirements)
 4. Situational: "How would you handle..." (based on job responsibilities)
-5. Motivation: Why they want this role, what interests them about the company"""
+5. Motivation: Why they want this role, what interests them about the company
+
+ENDING THE INTERVIEW:
+When wrapping up, ask if the candidate has any questions. If they say no or after you've answered their questions:
+1. Thank them for their time
+2. Explain that the team will be in touch about next steps
+3. Say a warm goodbye (e.g., "It was great meeting you, have a wonderful day!")
+4. Then use the terminate_session tool
+
+CRITICAL TOOL USAGE RULES:
+- Tools are ACTIONS you execute, not words you speak
+- NEVER say tool names like "terminate_session" or "functions" out loud
+- When you want to end the interview, just say your goodbye, then execute the terminate_session tool as a separate action
+- Your spoken words and tool calls are completely separate things"""
 
     def _get_french_instructions(self, resume_summary: str, job_summary: str) -> str:
         company = self.job.get("company", "entreprise")
@@ -544,6 +560,19 @@ TYPES DE QUESTIONS À INCLURE :
 3. Comportementales : "Parlez-moi d'une situation où..." (liée aux exigences du poste)
 4. Situationnelles : "Comment géreriez-vous..." (basé sur les responsabilités du poste)
 5. Motivation : Pourquoi ce poste, ce qui les intéresse dans cette entreprise
+
+FIN DE L'ENTRETIEN :
+Lorsque vous concluez, demandez si le candidat a des questions. S'il dit non ou après avoir répondu à ses questions :
+1. Remerciez-le pour son temps
+2. Expliquez que l'équipe le recontactera pour les prochaines étapes
+3. Dites un au revoir chaleureux (ex: "C'était un plaisir de vous rencontrer, passez une excellente journée !")
+4. Puis utilisez l'outil terminate_session
+
+RÈGLES CRITIQUES D'UTILISATION DES OUTILS :
+- Les outils sont des ACTIONS que vous exécutez, PAS des mots que vous prononcez
+- Ne dites JAMAIS les noms d'outils comme "terminate_session" ou "functions" à voix haute
+- Quand vous voulez terminer l'entretien, dites simplement au revoir, puis exécutez l'outil terminate_session comme une action séparée
+- Vos paroles et vos appels d'outils sont des choses complètement distinctes
 
 IMPORTANT : Vous devez parler UNIQUEMENT en français pendant tout l'entretien."""
 
@@ -685,7 +714,7 @@ Tools: {', '.join(skills.get('tools', []))}"""
 
     @function_tool
     async def end_interview(self, context: RunContext) -> str:
-        """End the interview and provide a summary."""
+        """End the interview and provide a summary. Use this when wrapping up the interview."""
         if self.language == "fr":
             return f"""Entretien terminé !
 
@@ -702,6 +731,32 @@ Position: {self.job.get('title', 'Position')} at {self.job.get('company', 'Compa
 Questions asked: {self.questions_asked}
 
 Thank the candidate for their time, ask if they have any questions about the role or company, and explain that the team will be in touch about next steps."""
+
+    @function_tool
+    async def terminate_session(self, context: RunContext) -> None:
+        """End the interview and hang up the call.
+        Call this after saying goodbye to end the call for everyone."""
+        from livekit import api
+
+        # Signal to the frontend that the interview is ending
+        if self._room:
+            await self._room.local_participant.set_attributes({
+                "agent_state": "ended",
+                "interview_ended": "true"
+            })
+
+        # Wait for the current speech to finish playing
+        if context.session.current_speech:
+            await context.session.current_speech.wait_for_playout()
+
+        # Delete the room to end the call for everyone
+        if self._job_context:
+            await self._job_context.api.room.delete_room(
+                api.DeleteRoomRequest(room=self._room.name)
+            )
+
+        # Return None to complete silently without triggering another LLM response
+        return None
 
 
 async def entrypoint(ctx: agents.JobContext):
@@ -801,13 +856,21 @@ async def entrypoint(ctx: agents.JobContext):
             ctx.room.local_participant.set_attributes({"agent_state": state_name})
         )
 
+    # Create the interviewer agent
+    interviewer = JobInterviewer(resume=resume, job=job, language=language)
+
     # Start session
     logger.info("Starting session...")
     await session.start(
         room=ctx.room,
-        agent=JobInterviewer(resume=resume, job=job, language=language)
+        agent=interviewer
     )
     log_timing("Session started")
+
+    # Give the agent access to session, room, and context for terminate_session tool
+    interviewer._agent_session = session
+    interviewer._room = ctx.room
+    interviewer._job_context = ctx
 
     # Generate initial reply based on language
     logger.info("Generating initial reply...")
